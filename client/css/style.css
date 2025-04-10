@@ -2,23 +2,23 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-}
+  }
+  
+  body {
+    font-family: system-ui, sans-serif;
+    background-color: #f0f4f8;
+    color: #333;
+    line-height: 1.6;
+  }
 
-body {
-  font-family: system-ui, sans-serif;
-  background-color: #f0f4f8;
-  color: #333;
-  line-height: 1.6;
-}
-
-main {
-  padding: 2rem;
-  max-width: 800px;
-  margin: auto;
-  text-align: center;
-}
-
-h2 {
-  font-size: 1.8rem;
-  margin-bottom: 1rem;
-}
+  main {
+    padding: 2rem;
+    max-width: 800px;
+    margin: auto;
+    text-align: center;
+  }
+  
+  h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+  }
