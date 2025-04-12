@@ -1,0 +1,40 @@
+form{
+    text-align: center;
+    border-radius: 5px;
+  }
+  input {
+    width: 60%;
+    height: 5px;
+    border-radius: 5px;
+    padding: 20px;
+    margin: 3px auto;
+    background-color: #f0f4f8;
+  }
+  #signup-btn {
+    width: 60%;
+    height: 40px;
+    margin: 4px auto;
+    color: #202122;
+    font-size:medium;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  #forgot-password{
+    border: none;
+    padding: 4px;
+    color:#1500fff1;
+    font-weight: bold;
+    text-align: left;
+    margin-top: 10px;
+    cursor: pointer;
+  }
+
+
+  #signup-btn:hover{
+    background: #0d5acede;
+  }
+
+  #forgot-password:hover{
+    background: #cad9eede;
+  }
