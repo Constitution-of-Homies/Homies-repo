@@ -1,5 +1,5 @@
+import { auth } from "./firebase.js"; // this assumes firebase.js is in the same /js folder
 import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
-import { auth } from "./firebase.js";
 
 document.getElementById("signup-btn").addEventListener("click", (e) => {
     e.preventDefault();
