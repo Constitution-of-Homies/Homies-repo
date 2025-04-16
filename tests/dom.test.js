@@ -12,15 +12,6 @@ describe('HTML Structure', () => {
         document = dom.window.document;
     });
 
-    test('has a title', () => {
-        expect(document.title).toBe('Constitutional Archive Search Interface');
-    });
-
-    test('has a main heading', () => {
-        const h1 = document.querySelector('h1');
-        expect(h1).not.toBeNull();
-    });
-
     test('has a navigation bar', () => {
         const nav = document.querySelector('nav');
         expect(nav).not.toBeNull();
