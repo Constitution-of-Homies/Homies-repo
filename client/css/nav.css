@@ -1,25 +1,25 @@
 header {
     display: flex;
-    background-color: #1a4b8a;
-    color: white;
+    flex-direction: column;
+    background-color: #d9d9d9;
+    color: #606060;
     padding: 1.5rem;
     text-align: center;
     align-items: center;
   }
 
-  header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
-    width : 100%;
+  header img {
+    width: auto;
     justify-content: center;
     align-items: center;
   }
 
   nav {
     display: flex;
+    position: relative;
     align-items: center;
     justify-content: end;
-    width: 100%;
+    width: auto;
   }
   
   nav ul {
@@ -31,9 +31,10 @@ header {
   }
   
   nav a {
-    color: white;
+    color: #606060;
     text-decoration: none;
     font-weight: bold;
+    font-family: 'Courier New', Courier, monospace;
   }
 
   nav a:hover::after {
@@ -45,11 +46,17 @@ header {
     display: block;
     width: 0;
     height: 2px;
-    background: white;
+    background: #606060;
     transition: width 0.3s;
   }
   
   nav a.disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  .logo {
+    width: 100%;
+    height: auto;
+    margin-bottom: 1rem;
   }
