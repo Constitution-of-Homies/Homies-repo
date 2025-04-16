@@ -1,24 +1,42 @@
+:root {
+  /* Colors */
+  --primary-color: #606060;
+  --secondary-color: #d9d9d9;
+
+  /* Spacing */
+  --padding: 1rem;
+  --margin: 1rem;
+
+  /* Typography */
+  --font-family: 'Courier New', Courier, monospace;
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-  }
-  
-  body {
-    font-family: system-ui, sans-serif;
-    background-color: #f0f4f8;
-    color: #333;
-    line-height: 1.6;
-  }
+}
 
-  main {
-    padding: 2rem;
-    max-width: 800px;
-    margin: auto;
-    text-align: center;
-  }
-  
-  h2 {
-    font-size: 1.8rem;
-    margin-bottom: 1rem;
-  }
+body {
+  font-family: 'Courier New', Courier, monospace;
+  background-color: #d9d9d9;
+  color: #333;
+  line-height: 1.6;
+}
+
+main {
+  padding: 2rem;
+  max-width: 800px;
+  margin: auto;
+  text-align: center;
+}
+
+h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.filler {
+  height: 100vh;
+  background-color: #d9d9d9;
+}

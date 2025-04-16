@@ -39,3 +39,10 @@ form{
   #forgot-password:hover{
     background: #cad9eede;
   }
+  header img {
+    width: 100%;
+    height: auto;
+    margin-bottom: 1rem;
+    align-items: center;
+    justify-content: center;
+  }
