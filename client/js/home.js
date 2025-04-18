@@ -8,7 +8,7 @@ onAuthStateChanged(auth, (user) => {
   } else {
     const userData = JSON.parse(localStorage.getItem("user"));
 
-    document.getElementById("user-name").textContent = "Welcome: " + (userData?.username || "User");
+    document.getElementById("user-name").textContent = "Welcome, " + (userData?.username || "User");
     document.getElementById("user-email").textContent = "Email: " + (userData?.email || "No email");
   }
 });
