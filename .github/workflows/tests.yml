@@ -27,4 +27,5 @@ jobs:
     # Optional: Add coverage reporting
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
-      if: success()  # only run if tests pass
+      with:
+          token: ${{ secrets.CODECOV_TOKEN }}
