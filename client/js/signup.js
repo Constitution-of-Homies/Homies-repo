@@ -23,13 +23,15 @@ document.getElementById("signup-btn").addEventListener("click", async (e) => {
             email: user.email,
             username: username.trim().toLowerCase(),
             createdAt: new Date(),
-            provider: "email/password"
+            provider: "email/password",
+            role: "admin"
         });
 
         localStorage.setItem("user", JSON.stringify({
             uid: user.uid,
             email: user.email,
             username: user.username || userData?.name || "User",
+            role: "admin",
             // Space for more XD
         }));
         
@@ -66,13 +68,15 @@ document.getElementById("google-login-btn").addEventListener("click", async (e) 
         username: username,
         photoURL: user.photoURL || null,
         createdAt: new Date(),
-        provider: "google"
+        provider: "google",
+        role: "admin",
       }, { merge: true });
 
       localStorage.setItem("user", JSON.stringify({
         uid: user.uid,
         email: user.email,
-        username: username
+        username: username,
+        role: "admin",
         // Space for more XD
     }));
       

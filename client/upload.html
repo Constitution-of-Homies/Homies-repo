@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Azure Storage File Upload (SAS Enabled)</title>
+  <link rel="stylesheet" href="./css/upload.css">
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <h1>Upload Files to Azure Blob Storage</h1>
+  
+  <section class="upload-container">
+    <section class="drop-zone" id="dropZone">
+      <p class="drop-zone__prompt">Drop files here or click to select</p>
+      <input type="file" id="fileInput" class="drop-zone__input" multiple>
+    </section>
+    
+    <section class="file-preview" id="filePreview">
+      <h3>Files to Upload</h3>
+      <section id="previewList"></section>
+    </section>
+    
+    <button class="upload-btn" id="uploadBtn">Upload Files</button>
+    <button class="cancel-btn" id="cancelBtn">Clear Selection</button>
+  </section>
+  
+  <section class="progress-container" id="progressContainer">
+    <section id="fileInfo">Uploading file...</section>
+    <section class="progress-bar">
+      <section class="progress-fill" id="progressBar"></section>
+    </section>
+    <section id="progressText">0%</section>
+  </section>
+  
+  <section class="file-list" id="fileList">
+    <h2>Uploaded Files</h2>
+  </section>
+
+  <script type="module" src="./js/upload.js"></script>
+</body>
+</html>

@@ -1,8 +1,8 @@
 header {
     display: flex;
     flex-direction: column;
-    background-color: #d9d9d9;
-    color: #606060;
+    background-color: var(--secondary-color);
+    color: var(--primary-color);
     padding: 1.5rem;
     text-align: center;
     align-items: center;
@@ -31,10 +31,10 @@ header {
   }
   
   nav a {
-    color: #606060;
+    color: var(--primary-color);
     text-decoration: none;
-    font-weight: bold;
-    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.2rem;
+    font-family: var(--font-family);
   }
 
   nav a:hover::after {
@@ -46,7 +46,7 @@ header {
     display: block;
     width: 0;
     height: 2px;
-    background: #606060;
+    background: var(--primary-color);
     transition: width 0.3s;
   }
   

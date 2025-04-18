@@ -21,6 +21,7 @@ document.getElementById("login-btn").addEventListener("click", async (e) => {
             uid: user.uid,
             email: user.email,
             username: user.displayName || userData?.username || userData?.name || "User",
+            role: user.role,
             // Space for more XD
         }));
 
