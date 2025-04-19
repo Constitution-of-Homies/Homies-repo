@@ -47,11 +47,13 @@ app.get('/:page', (req, res, next) => {
     });
 });
 
-app.post('/get-sas-url', async (req, res) => {
+app.post('/api/get-sas-url', async (req, res) => {
     try {
+      console.log('Received SAS URL request:', req.body);
       const { blobName } = req.body;
       
       if (!blobName) {
+        console.log('Missing blobName in request');
         return res.status(400).json({ error: 'blobName is required' });
       }
   
@@ -79,6 +81,8 @@ app.post('/get-sas-url', async (req, res) => {
         permissions: BlobSASPermissions.parse("cw"),
         expiresOn
       }, sharedKeyCredential).toString();
+
+      console.log('Generated SAS URL successfully for blob:', blobName);
   
       res.json({ 
         sasUrl: `${blockBlobClient.url}?${sasToken}` 
