@@ -1,0 +1,151 @@
+input {
+  border-radius: 10px;
+  padding: 0.5rem;
+  outline: none;
+  border: 1px solid var(--primary-color);
+  flex: 1;
+}
+
+button#search-btn {
+  border-radius: 10px;
+  padding: 0.5rem;
+  outline: none;
+  background-color: var(--secondary-color);
+  cursor: pointer;
+  color: white;
+}
+
+button#search-btn:hover {
+  background-color: var(--primary-color);
+}
+
+/* Header and user styling */
+header {
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  color: var(--primary-color);
+  width: 100%;
+}
+
+header h1 {
+  font-size: 5rem;
+  font-weight: 500;
+  margin: 0;
+  padding-left: 50px;
+}
+
+nav {
+  display: flex;
+  position: relative;
+  align-items: center;
+  justify-content: end;
+  width: auto;
+  gap: 2.5rem;
+}
+
+nav a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 1.2rem;
+  font-family: var(--font-family);
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+}
+
+.user-info {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: end;
+  gap: 1rem;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 0.5px solid var(--primary-color);
+  display: none;
+}
+
+#sign-out-btn {
+  background-color: var(--signout-color);
+  color: black;
+  border: 0.5px solid var(--primary-color);
+  border-radius: 25px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+#sign-out-btn:hover {
+  background-color: #FF9999;
+}
+
+/* Intro section styling */
+#intro-section {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background-color: white;
+  border: 1px solid var(--primary-color);
+  border-radius: 10px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+#user-name {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+#user-email {
+  color: var(--primary-color);
+  font-style: italic;
+}
+
+/* Card styling */
+.card {
+  width: 250px;
+  height: 210px;
+  border: 1px solid var(--primary-color);
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: white;
+  margin: 1rem 0;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+}
+
+.card a {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  height: 100%;
+}
+
+.card h2 {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+#admin-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  align-items: flex-start;
+}

@@ -5,37 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scriptorium</title>
     <link rel="stylesheet" href="css/style.css"/>
-    <link rel="stylesheet" href="css/nav.css"/>
     <link rel="stylesheet" href="css/footer.css"/>
-    <link rel="stylesheet" href="css/home.css"/>
+    <link rel="stylesheet" href="css/admin-page.css"/>
 </head>
 <body>
     <header>
-        <img src="./images/logo20x4.png" alt="Scriptorium Logo" class="logo" />
+        <nav class="navbar">
+            <section class="logo">
+                <h1>Scriptorium</h1>
+            </section>
+            <ul class="user-info">
+                <li><a href="profile.html"><img id="user-avatar" alt="User Avatar" class="avatar" /></a></li>
+                <li><button id="sign-out-btn">Sign Out</button></li>
+            </ul>
+        </nav>
     </header>
 
     <main>
         <section id="intro-section">
-            <h1><p id="user-name"></p></h1>
+            <h1 id="user-name"></h1>
             <p id="user-email"></p>
         </section>
         <section id="admin-section">
-            <!-- <section class="card">
-                <a href="dashboard.html">
-                    <h2>Dashboard</h2>
-                    <p>Summary of key metrics and data.</p>
-                </a> 
-            </section> -->
             <section class="card">
                 <a href="upload.html">
                     <h2>Content Management</h2>
                     <p>Manage your articles, posts, and media files.</p>
                 </a>
             </section>
-            <section class="card">
+            <!-- <section class="card">
                 <a href="settings.html">
                     <h2>Settings</h2>
                     <p>Update your account settings and preferences.</p>
+                </a>
+            </section> -->
+            <section class="card" id="uploads-card">
+                <a href="my-uploads.html">
+                    <h2>My Uploads</h2>
+                    <p>View and manage your uploaded content.</p>
                 </a>
             </section>
         </section>
@@ -44,6 +51,6 @@
     <footer>
         <small>© 2025 Scriptorium</small>
     </footer> 
-    <script type="module" src="./js/home.js"></script>
+    <script type="module" src="./js/admin-page.js"></script>
 </body>
 </html>

@@ -1,3 +1,16 @@
+import { auth, db } from "./firebase.js";
+import { 
+  collection, 
+  addDoc, 
+  serverTimestamp,
+  doc,
+  setDoc,
+  updateDoc,
+  arrayUnion
+} from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+
+// DOM elements
 const fileInput = document.getElementById('fileInput');
 const uploadBtn = document.getElementById('uploadBtn');
 const cancelBtn = document.getElementById('cancelBtn');
@@ -12,6 +25,19 @@ const previewList = document.getElementById('previewList');
 
 // Store files with metadata
 let filesToUpload = [];
+let currentUser = null;
+
+// Initialize auth state listener
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  if (!user) {
+    console.log("User is not authenticated");
+    uploadBtn.disabled = true;
+  } else {
+    console.log("User is authenticated:", user.uid);
+    uploadBtn.disabled = false;
+  }
+});
 
 // Initialize drag and drop
 initDropZone();
@@ -289,29 +315,115 @@ async function uploadFiles() {
     return;
   }
 
-  progressContainer.style.display = 'block';
-
-  for (let i = 0; i < filesToUpload.length; i++) {
-    const fileData = filesToUpload[i];
-    const file = fileData.file;
-    const uniqueFileName = new Date().getTime() + '-' + file.name;
-
-    fileInfo.textContent = `Uploading: ${file.name} (${i+1} of ${filesToUpload.length})`;
-    progressBar.style.width = '0%';
-    progressText.textContent = '0%';
-
-    try {
-      const sasUrl = await getSasUrl(uniqueFileName);
-      await uploadToAzure(file, sasUrl, fileData.metadata.customMetadata);
-      addFileToList(file.name, sasUrl.split('?')[0], true);
-    } catch (error) {
-      console.error(error);
-      addFileToList(file.name, null, false, error.message);
-    }
+  if (!currentUser) {
+    alert('Please sign in to upload files.');
+    return;
   }
 
-  clearSelection();
-  fileInfo.textContent = 'Upload complete!';
+  progressContainer.style.display = 'block';
+
+  try {
+    for (let i = 0; i < filesToUpload.length; i++) {
+      const fileData = filesToUpload[i];
+      const file = fileData.file;
+      const uniqueFileName = `${currentUser.uid}/${new Date().getTime()}-${file.name}`;
+
+      fileInfo.textContent = `Uploading: ${file.name} (${i+1} of ${filesToUpload.length})`;
+      progressBar.style.width = '0%';
+      progressText.textContent = '0%';
+
+      try {
+        const sasUrl = await getSasUrl(uniqueFileName);
+        await uploadToAzure(file, sasUrl, fileData.metadata.customMetadata);
+        
+        const fileUrl = sasUrl.split('?')[0];
+        await addToFirestoreCollections(fileData, fileUrl, currentUser);
+        
+        addFileToList(file.name, fileUrl, true);
+      } catch (error) {
+        console.error(`Error uploading ${file.name}:`, error);
+        addFileToList(file.name, null, false, error.message);
+      }
+    }
+
+    alert('All files uploaded successfully!');
+  } catch (error) {
+    console.error('Upload process failed:', error);
+    alert('Upload process failed. Please try again.');
+  } finally {
+    clearSelection();
+    fileInfo.textContent = 'Upload complete!';
+  }
+}
+
+async function addToFirestoreCollections(fileData, fileUrl, user) {
+  const timestamp = serverTimestamp();
+  const fileType = fileData.metadata.type;
+  const metadata = fileData.metadata.customMetadata;
+  const tagsArray = metadata.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+
+  // First create the archiveItem document
+  const archiveItemRef = await addDoc(collection(db, "archiveItems"), {
+    name: fileData.metadata.name,
+    type: fileType,
+    size: fileData.metadata.size,
+    url: fileUrl,
+    lastModified: fileData.metadata.lastModified,
+    uploadedBy: user.uid,
+    uploadedAt: timestamp,
+    metadata: {
+      title: metadata.title,
+      description: metadata.description,
+      tags: tagsArray,
+      category: metadata.category
+    },
+    status: 'active',
+    views: 0,
+    downloads: 0
+  });
+
+  // Then create the searchIndex document
+  const searchIndexRef = await addDoc(collection(db, "searchIndex"), {
+    itemId: archiveItemRef.id,
+    title: metadata.title,
+    description: metadata.description,
+    tags: tagsArray,
+    category: metadata.category,
+    content: "", // Will be populated if you process text files later
+    type: fileType,
+    lastModified: fileData.metadata.lastModified,
+    uploadedBy: user.uid,
+    uploadedAt: timestamp
+  });
+
+  // Update the user's document to include this upload
+  const userRef = doc(db, "users", user.uid);
+  await updateDoc(userRef, {
+    uploads: arrayUnion({
+      itemId: archiveItemRef.id,
+      name: fileData.metadata.name,
+      type: fileType,
+      uploadedAt: new Date().toISOString(), // Use client timestamp instead
+      url: fileUrl
+    }),
+    lastUpload: serverTimestamp() // This is fine as it's a direct update
+  });
+
+  // Add to archiveCollection with proper path structure
+  await addDoc(collection(db, "archiveCollections"), {
+    itemId: archiveItemRef.id,
+    name: fileData.metadata.name,
+    type: fileType,
+    path: `/${metadata.category}/${fileType}`,
+    createdAt: timestamp,
+    createdBy: user.uid,
+    searchIndexId: searchIndexRef.id
+  });
+
+  return {
+    archiveItemId: archiveItemRef.id,
+    searchIndexId: searchIndexRef.id
+  };
 }
 
 function uploadToAzure(file, sasUrl, metadata) {
