@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MY UPLOADS</title>
-    <link rel="stylesheet" href="/client/css/ViewUpload.css">
-    <link rel="stylesheet" href="/client/css/style.css">
+    <link rel="stylesheet" href="css/ViewUpload.css">
+    <link rel="stylesheet" href="css/style.css">
     <style>
         /* Additional enhancements that won't affect functionality */
         body {
@@ -46,8 +46,8 @@
             transition: all 0.3s ease;
         }
         .file-actions a:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            color: var(--accent-color);
+            transform: scale(1.1);
         }
     </style>
 </head>
@@ -57,6 +57,6 @@
         <section id="files-container"></section>
     </main>
 
-    <script type="module" src="/client/js/ViewUpload.js"></script>
+    <script type="module" src="js/ViewUpload.js"></script>
 </body>
 </html>

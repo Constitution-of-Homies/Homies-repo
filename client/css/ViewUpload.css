@@ -40,7 +40,6 @@
   
   .file-card:hover {
     transform: translateY(-3px);
-    background-color: #606060;
   }
   
   .file-icon {
