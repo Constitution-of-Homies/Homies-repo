@@ -45,7 +45,7 @@
     "collectCoverage": true,
     "coverageReporters": ["lcov", "text-summary"],
     "collectCoverageFrom": ["client/js/**/*.js"],
-    "testMatch": ["**/test/**/*.test.js"],
+    "testMatch": ["**/tests/**/*.test.js"],
     "coveragePathIgnorePatterns": [
       "/node_modules/",
       "/test/"
