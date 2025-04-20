@@ -33,6 +33,10 @@ app.use((req, res, next) => {
     next();
 });
 
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'healthy', timestamp: new Date() });
+});
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(clientPath, 'index.html'));
 });
@@ -99,7 +103,7 @@ app.post('/api/get-sas-url', async (req, res) => {
         details: process.env.NODE_ENV === 'development' ? err.message : undefined
       });
     }
-  });
+});
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
