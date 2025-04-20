@@ -6,9 +6,9 @@
       "rewrite": "/server/server.js"
     },
     {
-      "route": "/get-sas-url",
+      "route": "/api/get-sas-url",
       "methods": ["POST"],
-      "rewrite": "/api/get-sas-url"
+      "rewrite": "/server/server.js"
     },
     {
       "route": "/server/*",
@@ -18,5 +18,7 @@
   ],
   "navigationFallback": {
     "rewrite": "/client/index.html"
-  }
+  },
+  "platform": "node",
+  "apiLocation": "/server"
 }
