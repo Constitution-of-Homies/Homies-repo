@@ -1,0 +1,88 @@
+:root {
+    --primary-color: #606060;
+    --secondary-color: #d9d9d9;
+    --accent-color: #0078d4;
+    --success-color: #4CAF50;
+    --error-color: #F44336;
+    --padding: 1rem;
+    --margin: 1rem;
+    --border-radius: 10px;
+    --font-family: 'Courier New', Courier, monospace;
+  }
+
+  body {
+    font-family: var(--font-family);
+    background-color: var(--secondary-color);
+    color: #333;
+    line-height: 1.6;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+/* File Display Styles */
+#files-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px;
+  }
+  
+  .file-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 15px;
+    display: flex;
+    gap: 15px;
+    transition: transform 0.2s;
+  }
+  
+  .file-card:hover {
+    transform: translateY(-3px);
+    background-color: #606060;
+  }
+  
+  .file-icon {
+    font-size: 2.5rem;
+    margin-right: 10px;
+  }
+  
+  .file-details {
+    flex: 1;
+  }
+  
+  .file-details h3 {
+    margin: 0 0 5px 0;
+    font-size: 1.1rem;
+    color: #333;
+  }
+  
+  .file-description {
+    color: #666;
+    font-size: 0.9rem;
+    margin: 0 0 10px 0;
+  }
+  
+  .file-meta {
+    display: flex;
+    gap: 15px;
+    color: #888;
+    font-size: 0.8rem;
+    margin-bottom: 15px;
+  }
+  
+  .file-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  /* Status messages */
+  .loading, .empty-message, .auth-message, .error-message {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+  }
+
+
+

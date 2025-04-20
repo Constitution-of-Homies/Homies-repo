@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY UPLOADS</title>
+    <link rel="stylesheet" href="/client/css/ViewUpload.css">
+    <link rel="stylesheet" href="/client/css/style.css">
+    <style>
+        /* Additional enhancements that won't affect functionality */
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #d9d9d9 100%);
+            min-height: 100vh;
+        }
+        h1 {
+            text-align: center;
+            margin: 2rem 0;
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            position: relative;
+            padding-bottom: 1rem;
+        }
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: var(--accent-color);
+            border-radius: 3px;
+        }
+        #files-container {
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .file-card {
+            border-left: 4px solid var(--accent-color);
+        }
+        .file-actions a {
+            transition: all 0.3s ease;
+        }
+        .file-actions a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>MY FILES</h1>
+        <section id="files-container"></section>
+    </main>
+
+    <script type="module" src="/client/js/ViewUpload.js"></script>
+</body>
+</html>
