@@ -2,9 +2,9 @@ name: Jest Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 jobs:
   test:
@@ -24,8 +24,8 @@ jobs:
     - name: Run tests
       run: npm test
       
-    # Optional: Add coverage reporting
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage/lcov.info

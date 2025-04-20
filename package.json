@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node api/index.js",
     "test": "jest",
-    "test:watch": "jest --watchAll"
+    "test:watch": "jest --watchAll",
+    "upload-coverage": "codecov"
   },
   "repository": {
     "type": "git",
