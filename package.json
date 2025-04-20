@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "description": "- Hi, I am Zayd (2653934), a developer on this project.\r - Developer David (2709081) reporting for duty.\r - Um... I, Kgali(2713248) finally have access to the repo.\r - Hello world, Mbowane(2377843) here, lets get this 100%.\r - Hi, I am Yohanes (2729084), a developer on this project.",
   "type": "module",
-  "main": "server/server.js",
+  "main": "api/index.js",
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "start": "node server/server.js",
+    "start": "node api/index.js",
     "test": "jest",
     "test:watch": "jest --watchAll"
   },

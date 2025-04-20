@@ -1,24 +1,15 @@
 {
   "routes": [
     {
-      "route": "/:page",
+      "route": "/api/*",
       "methods": ["GET", "POST", "PUT", "DELETE"],
-      "rewrite": "/server/server.js"
-    },
-    {
-      "route": "/api/get-sas-url",
-      "methods": ["POST"],
-      "rewrite": "/server/server.js"
-    },
-    {
-      "route": "/server/*",
-      "methods": ["GET", "POST", "PUT", "DELETE"],
-      "rewrite": "/server/server.js"
+      "rewrite": "/index.js"
     }
   ],
   "navigationFallback": {
-    "rewrite": "/client/index.html"
+    "rewrite": "/index.html",
+    "exclude": ["/api/*"]
   },
   "platform": "node",
-  "apiLocation": "/server"
+  "apiLocation": "server"
 }

@@ -21,6 +21,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(clientPath));
 
+app.use(cors({
+  origin: 'https://mango-bush-0fd241403.6.azurestaticapps.net',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type']
+}));
+
 app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
@@ -84,10 +90,8 @@ app.post('/api/get-sas-url', async (req, res) => {
 
       console.log('Generated SAS URL successfully for blob:', blobName);
   
-      res.json({ 
-        sasUrl: `${blockBlobClient.url}?${sasToken}` 
-      });
-  
+      res.setHeader('Content-Type', 'application/json');
+      res.json({ sasUrl: `${blockBlobClient.url}?${sasToken}` });
     } catch (err) {
       console.error('SAS generation failed:', err);
       res.status(500).json({ 
@@ -95,7 +99,7 @@ app.post('/api/get-sas-url', async (req, res) => {
         details: process.env.NODE_ENV === 'development' ? err.message : undefined
       });
     }
-});
+  });
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
