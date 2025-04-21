@@ -3,28 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Constitutional Archive Search Interface</title>
+    <title>Scriptorium Login Page</title>
     <link rel="stylesheet" href="css/style.css"/>
     <link rel="stylesheet" href="css/login.css"/>
     <link rel="stylesheet" href="css/footer.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
-    <header>
-        <img src="./images/logo20x4.png" alt="Scriptorium Logo" class="logo" />
-    </header>
     <main>
+        <img src="./images/logo20x4.png" alt="Scriptorium Logo" class="logo">
         <section id="login-section">
+            <p class="login-info">Only login via email or Google is supported in your region.</p>
+            
             <form id="auth-form">
-                <input type="email" id="email" placeholder="youremail@example.com" required>
+                <input type="email" id="email" placeholder="Email" required>
                 <input type="password" id="password" placeholder="Password" required>
-                <button id="login-btn">Login</button> <br>
-                <button id="forgot-password">Forgot Password?</button><br>
-                <small>Don't have an account ? <a href ="signup.html" >Sign Up</a></small>
+                <p class="terms">By signing up or logging in, you consent to Scriptorium's <strong>Terms of Use</strong> and <strong>Privacy Policy</strong>.</p>
+                <button type="submit" id="login-btn">Login</button>
+                <section class="form-links">
+                    <a href="#" id="forgot-password" class="forgot-password">Forgot password?</a>
+                    <a href="signup.html" class="signup-link">Sign up</a>
+                </section>
+                <p class="or-divider">OR</p>
+                <button type="button" id="google-login-btn" class="google-login-btn">
+                    <img src="./images/google.png" alt="Google icon">
+                    Log in with Google
+                </button>
             </form>
         </section>
     </main>
     <footer>
-        <small>&copy; 2025 Constitutional Archive Project</small>
+        <small>© 2025 Scriptorium</small>
     </footer>
     <script type="module" src="./js/login.js"></script>
 </body>

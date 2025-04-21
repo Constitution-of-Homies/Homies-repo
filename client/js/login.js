@@ -3,10 +3,12 @@ import {
     sendPasswordResetEmail,
     onAuthStateChanged,
     browserLocalPersistence,
-    setPersistence
+    setPersistence,
+    GoogleAuthProvider,
+    signInWithPopup
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
 import { auth, db } from "./firebase.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
 // Set auth persistence
 (async function initAuth() {
@@ -101,4 +103,47 @@ onAuthStateChanged(auth, (user) => {
         console.log("User is logged out");
         // You can update UI based on auth state here
     }
+});
+
+const provider = new GoogleAuthProvider();
+
+document.getElementById("google-login-btn").addEventListener("click", async (e) => {
+  e.preventDefault();
+  
+  try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Generate username if not provided by Google
+      const username = user.displayName || 
+                       user.email.split('@')[0] || 
+                       `user${Math.random().toString(36).substring(2, 8)}`;
+
+      // Create or update user document in Firestore
+      await setDoc(doc(db, "users", user.uid), {
+          email: user.email,
+          username: username,
+          photoURL: user.photoURL || null,
+          createdAt: new Date(),
+          provider: "google",
+          role: "admin",
+          lastLogin: new Date()
+      }, { merge: true });
+      
+      console.log("Google login successful:", user.uid);
+      window.location.href = "admin-page.html";
+  } catch (error) {
+      console.error("Error:", error.code, error.message);
+      
+      let errorMessage = "Google login failed. ";
+      if (error.code === "auth/popup-closed-by-user") {
+          errorMessage += "You closed the sign-in window.";
+      } else if (error.code === "auth/cancelled-popup-request") {
+          errorMessage += "Sign-in was cancelled.";
+      } else {
+          errorMessage += error.message;
+      }
+      
+      alert(errorMessage);
+  }
 });

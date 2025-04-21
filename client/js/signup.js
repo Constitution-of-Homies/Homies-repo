@@ -21,9 +21,15 @@ document.getElementById("signup-btn").addEventListener("click", async (e) => {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
     const username = document.getElementById("username").value;
+    const confirmPassword = document.getElementById("confirm-password").value;
 
     if (!username || username.trim() === "") {
         alert("Please enter a username");
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        alert("Passwords do not match. Please make sure both passwords are identical.");
         return;
     }
 
