@@ -3,40 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Constitutional Archive Search Interface</title>
+    <title>Scriptorium Signup Page</title>
     <link rel="stylesheet" href="css/style.css"/>
     <link rel="stylesheet" href="css/nav.css"/>
     <link rel="stylesheet" href="css/signup.css"/>
     <link rel="stylesheet" href="css/footer.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
-<header> <img src="./images/logo20x4.png" alt="Scriptorium Logo" class="logo" /></header>
 <body>
-  <main class = "signup-container">
+  <main>
+    <img src="./images/logo20x4.png" alt="Scriptorium Logo" class="logo">
     <section id="signup-section">
-      <form id="signup-form">
-        <section class = "input-group">
-          <i class="fa-solid fa-user"></i>
-          <input type="username" id="username" placeholder="Username" autocomplete="off" />
-        </section>
 
-        <section class = "input-group">
-          <i class="fa-solid fa-envelope"></i>
-          <input type="email" id="email" placeholder="Email" autocomplete="off" /><br>
-        </section>
+      <form id="signup-form">
+        <input type="username" id="username" placeholder="Username" autocomplete="off" />
+        <input type="email" id="email" placeholder="Email" autocomplete="off" />
+        <input type="password" id="password" placeholder="Password" autocomplete="off" />
+        <input type="password" id="confirm-password" placeholder="Confirm Password" autocomplete="off" />
         
-        <section class = "input-group">
-          <i class="fa-solid fa-lock"></i>
-          <input type="password" id="password" placeholder="Password" autocomplete="off" /><br>
-        </section>
-        
-        <section class = "input-group">
-          <i class="fa-solid fa-lock"></i>
-          <input type="password" id="confirm-password" placeholder="Confirm Password" autocomplete="off" /><br>
-        </section>
-        
-        <button id="signup-btn">Sign Up</button><br>
+        <button type="submit" id="signup-btn">Sign Up</button>
         <p class="login-link">Already have an account? <a href="login.html">Log in</a></p>
+        <p class="or-divider">OR</p>
+                <button type="button" id="google-login-btn" class="google-login-btn">
+                    <img src="./images/google.png" alt="Google icon">
+                    Sign up with Google
+                </button>
       </form>
     </section>
   </main>
