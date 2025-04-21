@@ -1,4 +1,5 @@
-function formatFileSize(bytes) {
+// utils.mjs
+export function formatFileSize(bytes) {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -6,7 +7,7 @@ function formatFileSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
   
-function detectFileType(file) {
+export function detectFileType(file) {
     const type = file.type.split('/')[0];
     const extension = file.name.split('.').pop().toLowerCase();
 
@@ -32,20 +33,17 @@ function detectFileType(file) {
     return 'unknown';
 }
   
-function getFileIcon(type) {
-const icons = {
-    image: '🖼️',
-    video: '🎬',
-    audio: '🎵',
-    document: '📄',
-    spreadsheet: '📊',
-    presentation: '📑',
-    archive: '🗄️',
-    code: '💻',
-    unknown: '📁'
-};
-return icons[type] || icons.unknown;
+export function getFileIcon(type) {
+    const icons = {
+        image: '🖼️',
+        video: '🎬',
+        audio: '🎵',
+        document: '📄',
+        spreadsheet: '📊',
+        presentation: '📑',
+        archive: '🗄️',
+        code: '💻',
+        unknown: '📁'
+    };
+    return icons[type] || icons.unknown;
 }
-  
-module.exports = { formatFileSize, detectFileType, getFileIcon };
-  

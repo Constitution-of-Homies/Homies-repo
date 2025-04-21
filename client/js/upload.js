@@ -1,4 +1,3 @@
-import { auth, db } from "./firebase.js";
 import { 
   collection, 
   addDoc, 
@@ -8,9 +7,15 @@ import {
   updateDoc,
   arrayUnion
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+// import {
+//   BlobServiceClient,
+//   StorageSharedKeyCredential,
+//   generateBlobSASQueryParameters,
+//   BlobSASPermissions
+// } from 'https://cdn.jsdelivr.net/npm/@azure/storage-blob@12.14.0/dist/azure-storage-blob.min.js';
+import { auth, db } from "./firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
-const { formatFileSize, detectFileType, getFileIcon } = require('./utils.js');
-
+import { formatFileSize, detectFileType, getFileIcon } from './utils.mjs';
 
 // DOM elements
 const fileInput = document.getElementById('fileInput');
@@ -124,59 +129,60 @@ function handleFileSelection() {
   }
 }
 
-// function detectFileType(file) {
-//   const type = file.type.split('/')[0];
-//   const extension = file.name.split('.').pop().toLowerCase();
+/*
+function detectFileType(file) {
+  const type = file.type.split('/')[0];
+  const extension = file.name.split('.').pop().toLowerCase();
   
-//   if (type === 'image') return 'image';
-//   if (type === 'video') return 'video';
-//   if (type === 'audio') return 'audio';
+  if (type === 'image') return 'image';
+  if (type === 'video') return 'video';
+  if (type === 'audio') return 'audio';
   
-//   // Check common document types
-//   const documentTypes = ['pdf', 'doc', 'docx', 'txt', 'rtf'];
-//   if (documentTypes.includes(extension)) return 'document';
+  // Check common document types
+  const documentTypes = ['pdf', 'doc', 'docx', 'txt', 'rtf'];
+  if (documentTypes.includes(extension)) return 'document';
   
-//   // Check spreadsheet types
-//   const spreadsheetTypes = ['xls', 'xlsx', 'csv'];
-//   if (spreadsheetTypes.includes(extension)) return 'spreadsheet';
+  // Check spreadsheet types
+  const spreadsheetTypes = ['xls', 'xlsx', 'csv'];
+  if (spreadsheetTypes.includes(extension)) return 'spreadsheet';
   
-//   // Check presentation types
-//   const presentationTypes = ['ppt', 'pptx'];
-//   if (presentationTypes.includes(extension)) return 'presentation';
+  // Check presentation types
+  const presentationTypes = ['ppt', 'pptx'];
+  if (presentationTypes.includes(extension)) return 'presentation';
   
-//   // Check archive types
-//   const archiveTypes = ['zip', 'rar', '7z', 'tar', 'gz'];
-//   if (archiveTypes.includes(extension)) return 'archive';
+  // Check archive types
+  const archiveTypes = ['zip', 'rar', '7z', 'tar', 'gz'];
+  if (archiveTypes.includes(extension)) return 'archive';
   
-//   // Check code types
-//   const codeTypes = ['js', 'html', 'css', 'py', 'java', 'cpp', 'c', 'php', 'json', 'xml'];
-//   if (codeTypes.includes(extension)) return 'code';
+  // Check code types
+  const codeTypes = ['js', 'html', 'css', 'py', 'java', 'cpp', 'c', 'php', 'json', 'xml'];
+  if (codeTypes.includes(extension)) return 'code';
   
-//   return 'unknown';
-// }
+  return 'unknown';
+}
 
-// function getFileIcon(type) {
-//   const icons = {
-//     image: '🖼️',
-//     video: '🎬',
-//     audio: '🎵',
-//     document: '📄',
-//     spreadsheet: '📊',
-//     presentation: '📑',
-//     archive: '🗄️',
-//     code: '💻',
-//     unknown: '📁'
-//   };
-//   return icons[type] || icons.unknown;
-// }
-
-// function formatFileSize(bytes) {
-//   if (bytes === 0) return '0 Bytes';
-//   const k = 1024;
-//   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-//   const i = Math.floor(Math.log(bytes) / Math.log(k));
-//   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-// }
+function getFileIcon(type) {
+  const icons = {
+    image: '🖼️',
+    video: '🎬',
+    audio: '🎵',
+    document: '📄',
+    spreadsheet: '📊',
+    presentation: '📑',
+    archive: '🗄️',
+    code: '💻',
+    unknown: '📁'
+  };
+  return icons[type] || icons.unknown;
+}
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+*/
 
 function updateFilePreview() {
   previewList.innerHTML = '';
@@ -475,6 +481,45 @@ function addFileToList(fileName, url, success, errorMsg) {
   fileList.appendChild(item);
 }
 
+// async function getSasUrl(blobName) {
+//   try {
+//     // TEMPORARY DEMO CREDENTIALS - REPLACE WITH YOUR OWN
+// const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
+//       const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
+//       const containerName = process.env.AZURE_CONTAINER_NAME;
+
+//     if (!accountName || !accountKey || !containerName) {
+//       throw new Error('Missing Azure Storage credentials');
+//     }
+
+//     const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
+    
+//     // Generate SAS token
+//     const expiresOn = new Date(new Date().valueOf() + 60 * 60 * 1000); // 1 hour expiration
+//     const sasToken = generateBlobSASQueryParameters({
+//       containerName,
+//       blobName,
+//       permissions: BlobSASPermissions.parse("cw"), // Create + Write permissions
+//       expiresOn
+//     }, sharedKeyCredential).toString();
+
+//     const blobServiceClient = new BlobServiceClient(
+//       `https://${accountName}.blob.core.windows.net`,
+//       sharedKeyCredential
+//     );
+    
+//     const containerClient = blobServiceClient.getContainerClient(containerName);
+//     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+//     const sasUrl = `${blockBlobClient.url}?${sasToken}`;
+//     console.log('Generated SAS URL:', sasUrl);
+//     return sasUrl;
+//   } catch (error) {
+//     console.error('Error generating SAS URL:', error);
+//     throw error;
+//   }
+// }
+
 async function getSasUrl(blobName) {
   try {
     console.log('Requesting SAS URL for:', blobName);
@@ -533,4 +578,4 @@ async function getSasUrl(blobName) {
     console.error('Error getting SAS URL:', error);
     throw error;
   }
-}
+} 

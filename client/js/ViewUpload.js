@@ -1,21 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
 import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDyLL5lej7NYTIi9udmCwe_l7HsVb7e-AQ",
-  authDomain: "constitution-of-homies.firebaseapp.com",
-  projectId: "constitution-of-homies",
-  storageBucket: "constitution-of-homies.appspot.com",
-  messagingSenderId: "534709453915",
-  appId: "1:534709453915:web:855e13de6ef93393f16b7e",
-  measurementId: "G-9SCYLHCB0L"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+import { auth, db } from "./firebase.js";
 
 const fileIcons = {
   image: '🖼️',
@@ -170,8 +156,16 @@ function formatDate(date) {
   });
 }
 
-function formatFileSize(bytes) {
-  if (!bytes) return 'Unknown size';
+function formatFileSize(size) {
+  if (!size) return 'Unknown size';
+  
+  if (typeof size === 'string' && /^[\d.]+ [KMG]?B$/.test(size)) {
+    return size;
+  }
+  
+  const bytes = typeof size === 'string' ? parseFloat(size) : size;
+  if (isNaN(bytes)) return 'Unknown size';
+  
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
   if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(1)} MB`;

@@ -57,7 +57,8 @@
       "client/js/**/*.js"
     ],
     "testMatch": [
-      "**/tests/**/*.test.js", "**/tests/**/*.test.mjs"
+      "**/tests/**/*.test.js",
+      "**/tests/**/*.test.mjs"
     ],
     "coveragePathIgnorePatterns": [
       "/node_modules/",
