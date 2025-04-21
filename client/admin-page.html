@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scriptorium</title>
+    <title>Scriptorium - Admin Dashboard</title>
     <link rel="stylesheet" href="css/style.css"/>
     <link rel="stylesheet" href="css/footer.css"/>
     <link rel="stylesheet" href="css/admin-page.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <header>
@@ -16,35 +17,94 @@
             </section>
             <ul class="user-info">
                 <li><a href="profile.html"><img id="user-avatar" alt="User Avatar" class="avatar" /></a></li>
-                <li><button id="sign-out-btn">Sign Out</button></li>
+                <li><button id="sign-out-btn"><i class="fas fa-sign-out-alt"></i> Sign Out</button></li>
             </ul>
         </nav>
     </header>
 
     <main>
-        <section id="intro-section">
-            <h1 id="user-name"></h1>
-            <p id="user-email"></p>
+        <section id="welcome-section">
+            <div id="user-greeting">
+                <h1 id="user-name"></h1>
+                <p id="user-email"></p>
+            </div>
+            <div id="stats-summary">
+                <div class="stat-card">
+                    <i class="fas fa-file-alt"></i>
+                    <h3>12</h3>
+                    <p>Articles</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-image"></i>
+                    <h3>24</h3>
+                    <p>Media Files</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-eye"></i>
+                    <h3>1.2K</h3>
+                    <p>Views</p>
+                </div>
+            </div>
         </section>
+        
         <section id="admin-section">
-            <section class="card">
-                <a href="upload.html">
-                    <h2>Content Management</h2>
-                    <p>Manage your articles, posts, and media files.</p>
-                </a>
-            </section>
-            <!-- <section class="card">
-                <a href="settings.html">
-                    <h2>Settings</h2>
-                    <p>Update your account settings and preferences.</p>
-                </a>
-            </section> -->
-            <section class="card" id="uploads-card">
-                <a href="ViewUpload.html">
-                    <h2>My Uploads</h2>
-                    <p>View and manage your uploaded content.</p>
-                </a>
-            </section>
+            <h2 class="section-title">Quick Actions</h2>
+            <div class="cards-container">
+                <section class="card">
+                    <a href="upload.html">
+                        <div class="card-icon">
+                            <i class="fas fa-upload"></i>
+                        </div>
+                        <h2>Content Management</h2>
+                        <p>Manage your articles, posts, and media files.</p>
+                    </a>
+                </section>
+                <section class="card">
+                    <a href="ViewUpload.html">
+                        <div class="card-icon">
+                            <i class="fas fa-folder-open"></i>
+                        </div>
+                        <h2>My Uploads</h2>
+                        <p>View and manage your uploaded content.</p>
+                    </a>
+                </section>
+                <section class="card">
+                    <a href="#">
+                        <div class="card-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h2>Analytics</h2>
+                        <p>View content performance and statistics.</p>
+                    </a>
+                </section>
+            </div>
+        </section>
+        
+        <section id="recent-activity">
+            <h2 class="section-title">Recent Activity</h2>
+            <div class="activity-list">
+                <div class="activity-item">
+                    <i class="fas fa-file-upload activity-icon"></i>
+                    <div class="activity-details">
+                        <p>Uploaded "Getting Started Guide"</p>
+                        <small>2 hours ago</small>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <i class="fas fa-edit activity-icon"></i>
+                    <div class="activity-details">
+                        <p>Edited "API Documentation"</p>
+                        <small>Yesterday</small>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <i class="fas fa-users activity-icon"></i>
+                    <div class="activity-details">
+                        <p>New user registration</p>
+                        <small>2 days ago</small>
+                    </div>
+                </div>
+            </div>
         </section>
     </main>
 

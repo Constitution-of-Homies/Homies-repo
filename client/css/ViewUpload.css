@@ -1,87 +1,152 @@
 :root {
-    --primary-color: #606060;
-    --secondary-color: #d9d9d9;
-    --accent-color: #0078d4;
-    --success-color: #4CAF50;
-    --error-color: #F44336;
-    --padding: 1rem;
-    --margin: 1rem;
-    --border-radius: 10px;
-    --font-family: 'Courier New', Courier, monospace;
-  }
+  /* Colors from style.css */
+  --primary-color: #606060;
+  --secondary-color: #d9d9d9;
+  --accent-color: #0078d4;
+  --success-color: #4CAF50;
+  --error-color: #F44336;
+  /* Spacing from style.css */
+  --padding: 1rem;
+  --margin: 1rem;
+  --border-radius: 10px;
+  /* Typography from style.css */
+  --font-family: 'Courier New', Courier, monospace;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
 
-  body {
-    font-family: var(--font-family);
-    background-color: var(--secondary-color);
-    color: #333;
-    line-height: 1.6;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 2rem;
-  }
+body {
+  font-family: var(--font-family);
+  background: linear-gradient(135deg, var(--secondary-color) 0%, #c9c9c9 100%);
+  color: #333;
+  line-height: 1.6;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  min-height: 100vh;
+}
 
 /* File Display Styles */
 #files-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-    padding: 20px;
-  }
-  
-  .file-card {
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    padding: 15px;
-    display: flex;
-    gap: 15px;
-    transition: transform 0.2s;
-  }
-  
-  .file-card:hover {
-    transform: translateY(-3px);
-  }
-  
-  .file-icon {
-    font-size: 2.5rem;
-    margin-right: 10px;
-  }
-  
-  .file-details {
-    flex: 1;
-  }
-  
-  .file-details h3 {
-    margin: 0 0 5px 0;
-    font-size: 1.1rem;
-    color: #333;
-  }
-  
-  .file-description {
-    color: #666;
-    font-size: 0.9rem;
-    margin: 0 0 10px 0;
-  }
-  
-  .file-meta {
-    display: flex;
-    gap: 15px;
-    color: #888;
-    font-size: 0.8rem;
-    margin-bottom: 15px;
-  }
-  
-  .file-actions {
-    display: flex;
-    gap: 10px;
-  }
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  padding: var(--padding);
+}
 
-  /* Status messages */
-  .loading, .empty-message, .auth-message, .error-message {
-    text-align: center;
-    padding: 40px;
-    color: #666;
-  }
+.file-card {
+  background: #ffffff;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: 15px;
+  display: flex;
+  gap: 15px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-left: 4px solid var(--accent-color);
+}
 
+.file-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
 
+.file-icon {
+  font-size: 2.5rem;
+  display: flex;
+  align-items: center;
+  color: var(--accent-color);
+}
 
+.file-details {
+  flex: 1;
+}
+
+.file-details h3 {
+  margin: 0 0 6px 0;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.file-description {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0 0 10px 0;
+  line-height: 1.5;
+}
+
+.file-meta {
+  display: flex;
+  gap: 15px;
+  color: #888;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+.file-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.file-actions a, .file-actions button {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 5px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.file-actions .view-btn {
+  background: var(--accent-color);
+  color: white;
+}
+
+.file-actions .view-btn:hover {
+  background: #005ea2;
+  transform: translateY(-2px);
+}
+
+.file-actions .download-btn {
+  background: var(--primary-color);
+  color: white;
+}
+
+.file-actions .download-btn:hover {
+  background: #4a4a4a;
+  transform: translateY(-2px);
+}
+
+.file-actions .edit-btn {
+  background: var(--success-color);
+  color: white;
+}
+
+.file-actions .edit-btn:hover {
+  background: #388E3C;
+  transform: translateY(-2px);
+}
+
+.file-actions .delete-btn {
+  background: var(--error-color);
+  color: white;
+}
+
+.file-actions .delete-btn:hover {
+  background: #D32F2F;
+  transform: translateY(-2px);
+}
+
+/* Status messages */
+.loading, .empty-message, .auth-message, .error-message {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+}

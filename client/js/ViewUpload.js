@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+import { getFirestore, collection, query, where, getDocs, doc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
 import { auth, db } from "./firebase.js";
 
@@ -32,6 +32,50 @@ document.addEventListener('DOMContentLoaded', () => {
         '<p class="auth-message">Please sign in to view your files</p>';
     }
   });
+
+  // Event delegation for edit and delete buttons
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('edit-btn')) {
+      const docId = e.target.dataset.docId;
+      const title = e.target.dataset.title || 'Untitled';
+      const description = e.target.dataset.description || '';
+      const tags = e.target.dataset.tags || '';
+      const category = e.target.dataset.category || 'general';
+      openEditModal(docId, title, description, tags, category);
+    } else if (e.target.classList.contains('delete-btn')) {
+      const docId = e.target.dataset.docId;
+      const blobName = e.target.dataset.blobName;
+      if (confirm('Are you sure you want to delete this file?')) {
+        deleteFile(docId, blobName);
+      }
+    }
+  });
+
+  // Handle edit form submission
+  const editForm = document.getElementById('edit-form');
+  if (editForm) {
+    editForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const docId = editForm.dataset.docId;
+      const title = document.getElementById('edit-title').value;
+      const description = document.getElementById('edit-description').value;
+      const tags = document.getElementById('edit-tags').value;
+      const category = document.getElementById('edit-category').value;
+      await updateFileMetadata(docId, { title, description, tags, category });
+      closeEditModal();
+      // Refresh the file list
+      const user = auth.currentUser;
+      if (user) {
+        displayFiles(user.uid);
+      }
+    });
+  }
+
+  // Close modal on cancel
+  const cancelBtn = document.getElementById('cancel-edit');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', closeEditModal);
+  }
 });
 
 async function displayFiles(userId) {
@@ -42,41 +86,29 @@ async function displayFiles(userId) {
   }
 
   try {
-    console.log(`Fetching files for user: ${userId}`); // Debug log
+    console.log(`Fetching files for user: ${userId}`);
     container.innerHTML = '<section class="file-card">Loading...</section>';
     
-    // Try both possible field names for uploader
     let q = query(
       collection(db, "archiveItems"), 
-      where("Uploaded", "==", userId)
+      where("uploadedBy", "==", userId)
     );
     
-    // First try with "Uploaded"
     let querySnapshot = await getDocs(q);
     
-    // If no results, try with "uploadedBy"
-    if (querySnapshot.empty) {
-      console.log("Trying with 'uploadedBy' field instead");
-      q = query(
-        collection(db, "archiveItems"), 
-        where("uploadedBy", "==", userId)
-      );
-      querySnapshot = await getDocs(q);
-    }
-
-    console.log(`Found ${querySnapshot.size} documents`); // Debug log
+    console.log(`Found ${querySnapshot.size} documents`);
     
-    container.innerHTML = ''; // Clear loading message
+    container.innerHTML = '';
 
     if (querySnapshot.empty) {
-      console.log("No files found after trying both field names");
+      console.log("No files found");
       container.innerHTML = '<p class="auth-message">No files found</p>';
       return;
     }
 
     querySnapshot.forEach((doc) => {
       const file = doc.data();
-      console.log("Processing file document:", file); // Debug log
+      console.log("Processing file document:", file);
       
       const fileType = getSimplifiedType(file.type);
       const fileIcon = fileIcons[fileType] || fileIcons.default;
@@ -86,7 +118,6 @@ async function displayFiles(userId) {
         return;
       }
       
-      // Test the URL before creating the card
       testUrlAccessibility(file.url).then((isAccessible) => {
         if (!isAccessible) {
           console.error(`URL not accessible: ${file.url}`);
@@ -107,6 +138,13 @@ async function displayFiles(userId) {
             <section class="file-actions">
               <a href="${file.url}" class="view-btn" target="_blank" rel="noopener noreferrer">View</a>
               <a href="${file.url}" class="download-btn" download="${file.name || 'download'}">Download</a>
+              <button class="edit-btn" 
+                data-doc-id="${doc.id}" 
+                data-title="${file.metadata?.title || file.name || 'Untitled'}" 
+                data-description="${file.metadata?.description || ''}"
+                data-tags="${file.metadata?.tags?.join(', ') || ''}"
+                data-category="${file.metadata?.category || 'general'}">Edit</button>
+              <button class="delete-btn" data-doc-id="${doc.id}" data-blob-name="${file.path || ''}">Delete</button>
             </section>
           </section>
         `;
@@ -130,6 +168,131 @@ async function testUrlAccessibility(url) {
     return response.ok;
   } catch (error) {
     return false;
+  }
+}
+
+// Open edit modal
+function openEditModal(docId, title, description, tags, category) {
+  const modal = document.getElementById('edit-modal');
+  const form = document.getElementById('edit-form');
+  const titleInput = document.getElementById('edit-title');
+  const descriptionInput = document.getElementById('edit-description');
+  const tagsInput = document.getElementById('edit-tags');
+  const categoryInput = document.getElementById('edit-category');
+
+  if (modal && form && titleInput && descriptionInput && tagsInput && categoryInput) {
+    form.dataset.docId = docId;
+    titleInput.value = title;
+    descriptionInput.value = description;
+    tagsInput.value = tags;
+    categoryInput.value = category;
+    modal.style.display = 'block';
+  }
+}
+
+// Close edit modal
+function closeEditModal() {
+  const modal = document.getElementById('edit-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+// Update file metadata in Firestore
+async function updateFileMetadata(docId, metadata) {
+  try {
+    const docRef = doc(db, "archiveItems", docId);
+    const tagsArray = metadata.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+    await updateDoc(docRef, {
+      metadata: {
+        title: metadata.title,
+        description: metadata.description,
+        tags: tagsArray,
+        category: metadata.category
+      }
+    });
+    // Update searchIndex
+    const searchQuery = query(
+      collection(db, "searchIndex"),
+      where("itemId", "==", docId)
+    );
+    const searchSnapshot = await getDocs(searchQuery);
+    searchSnapshot.forEach(async (searchDoc) => {
+      await updateDoc(doc(db, "searchIndex", searchDoc.id), {
+        title: metadata.title,
+        description: metadata.description,
+        tags: tagsArray,
+        category: metadata.category
+      });
+    });
+    console.log("Metadata updated successfully");
+  } catch (error) {
+    console.error("Error updating metadata:", error);
+    alert("Failed to update metadata. Please try again.");
+  }
+}
+
+// Delete file from Azure Blob Storage and Firestore
+async function deleteFile(docId, blobName) {
+  try {
+    // Delete from Azure Blob Storage
+    if (blobName) {
+      const response = await fetch('/api/delete-blob', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ blobName })
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to delete blob: ${response.statusText}`);
+      }
+    }
+
+    // Delete related Firestore documents
+    const docRef = doc(db, "archiveItems", docId);
+    await deleteDoc(docRef);
+    console.log("Document deleted from archiveItems");
+
+    // Delete from searchIndex
+    const searchQuery = query(
+      collection(db, "searchIndex"),
+      where("itemId", "==", docId)
+    );
+    const searchSnapshot = await getDocs(searchQuery);
+    searchSnapshot.forEach(async (searchDoc) => {
+      await deleteDoc(doc(db, "searchIndex", searchDoc.id));
+    });
+
+    // Delete from archiveCollections
+    const collectionQuery = query(
+      collection(db, "archiveCollections"),
+      where("itemId", "==", docId)
+    );
+    const collectionSnapshot = await getDocs(collectionQuery);
+    collectionSnapshot.forEach(async (collDoc) => {
+      await deleteDoc(doc(db, "archiveCollections", collDoc.id));
+    });
+
+    // Remove from user's uploads
+    const user = auth.currentUser;
+    if (user) {
+      const userRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists()) {
+        const uploads = userDoc.data().uploads || [];
+        const updatedUploads = uploads.filter(upload => upload.itemId !== docId);
+        await updateDoc(userRef, { uploads: updatedUploads });
+      }
+    }
+
+    // Refresh the file list
+    if (user) {
+      displayFiles(user.uid);
+    }
+  } catch (error) {
+    console.error("Error deleting file:", error);
+    alert("Failed to delete file. Please try again.");
   }
 }
 

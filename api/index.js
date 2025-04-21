@@ -105,6 +105,31 @@ app.post('/api/get-sas-url', async (req, res) => {
     }
 });
 
+app.post('/delete-blob', async (req, res) => {
+  const { blobName } = req.body;
+  if (!blobName) {
+    return res.status(400).json({ error: 'Missing blobName' });
+  }
+
+  try {
+    const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
+    const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
+    const containerName = process.env.AZURE_CONTAINER_NAME;
+
+    const blobServiceClient = BlobServiceClient.fromConnectionString(
+      `DefaultEndpointsProtocol=https;AccountName=${accountName};AccountKey=${accountKey};EndpointSuffix=core.windows.net`
+    );
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+    await blockBlobClient.delete();
+    res.status(200).json({ message: 'Blob deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting blob:', error);
+    res.status(500).json({ error: 'Failed to delete blob' });
+  }
+});
+
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).send('Something broke!');

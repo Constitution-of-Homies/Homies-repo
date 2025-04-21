@@ -3,59 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MY UPLOADS</title>
+    <title>My Uploads</title>
     <link rel="stylesheet" href="css/ViewUpload.css">
     <link rel="stylesheet" href="css/style.css">
     <style>
-        /* Additional enhancements that won't affect functionality */
-        body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #d9d9d9 100%);
-            min-height: 100vh;
-        }
-        h1 {
+        main {
+            padding: 2rem;
+            max-width: 800px;
+            margin: auto;
             text-align: center;
-            margin: 2rem 0;
-            font-size: 2.5rem;
-            color: var(--primary-color);
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-            position: relative;
-            padding-bottom: 1rem;
         }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 2rem 0 var(--margin);
+            font-weight: bold;
+            color: var(--primary-color);
+            position: relative;
+            text-align: center;
+        }
+
         h1::after {
             content: '';
             position: absolute;
-            bottom: 0;
+            bottom: -8px;
             left: 50%;
             transform: translateX(-50%);
             width: 100px;
             height: 3px;
             background: var(--accent-color);
-            border-radius: 3px;
+            border-radius: 2px;
         }
+
         #files-container {
             animation: fadeIn 0.5s ease-out;
         }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .file-card {
-            border-left: 4px solid var(--accent-color);
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
         }
-        .file-actions a {
+
+        .modal-content {
+            background: white;
+            padding: var(--padding);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-content h2 {
+            font-size: 1.8rem;
+            margin-bottom: var(--margin);
+            color: var(--primary-color);
+        }
+
+        .modal-content form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .modal-content input,
+        .modal-content textarea,
+        .modal-content select {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-family: var(--font-family);
+            font-size: 0.9rem;
+        }
+
+        .modal-content textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .modal-content .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-content button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            font-family: var(--font-family);
+            font-size: 0.9rem;
+            cursor: pointer;
             transition: all 0.3s ease;
         }
-        .file-actions a:hover {
-            color: var(--accent-color);
-            transform: scale(1.1);
+
+        .modal-content button[type="submit"] {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .modal-content button[type="submit"]:hover {
+            background: #005ea2;
+        }
+
+        .modal-content button#cancel-edit {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .modal-content button#cancel-edit:hover {
+            background: #4a4a4a;
         }
     </style>
 </head>
 <body>
     <main>
-        <h1>MY FILES</h1>
+        <h1>My Files</h1>
         <section id="files-container"></section>
     </main>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <h2>Edit File Metadata</h2>
+            <form id="edit-form">
+                <label for="edit-title">Title</label>
+                <input type="text" id="edit-title" name="title" required>
+                <label for="edit-description">Description</label>
+                <textarea id="edit-description" name="description"></textarea>
+                <label for="edit-tags">Tags (comma separated)</label>
+                <input type="text" id="edit-tags" name="tags">
+                <label for="edit-category">Category</label>
+                <select id="edit-category" name="category">
+                    <option value="general">General</option>
+                    <option value="work">Work</option>
+                    <option value="personal">Personal</option>
+                    <option value="media">Media</option>
+                    <option value="documents">Documents</option>
+                </select>
+                <div class="modal-actions">
+                    <button type="button" id="cancel-edit">Cancel</button>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script type="module" src="js/ViewUpload.js"></script>
 </body>
