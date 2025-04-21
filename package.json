@@ -10,6 +10,7 @@
   "scripts": {
     "start": "node api/index.js",
     "test": "jest",
+    "build": "npm start",
     "test:watch": "jest --watchAll",
     "coverage": "jest --coverage --collectCoverageFrom='client/js/**/*.js'",
     "upload-coverage": "codecov"
