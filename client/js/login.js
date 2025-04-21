@@ -8,7 +8,7 @@ import {
     signInWithPopup
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
 import { auth, db } from "./firebase.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
 // Set auth persistence
 (async function initAuth() {
