@@ -3,41 +3,42 @@ form{
   border-radius: 5px;
 }
 
-input {
+.input-group {
+  position: relative;
   width: 60%;
-  height: 5px;
-  border-radius: 5px;
-  padding: 20px;
-  margin: 3px auto;
-  background-color: #f0f4f8;
+  margin: 15px auto;
 }
+
+.input-group i {
+  position: absolute;
+  top: 50%;
+  left: 15px;
+  transform: translateY(-50%);
+  color: #666;
+  font-size: 16px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px 12px 12px 40px; /* padding-left for icon space */
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background-color: #f0f4f8;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
 
 #signup-btn { 
   width: 60%;
   height: 40px;
   margin: 4px auto;
-  color: #202122;
+  color: #f0f4f8;
   font-size:medium;
   font-weight: bold;
   border-radius: 5px;
   cursor: pointer;
-}
-
-#google-login-btn {
-  width: 35px;
-  border-radius: 5px;
-  cursor: pointer;
-  margin: 10px auto;
-}
-
-#forgot-password{
-  border: none;
-  padding: 4px;
-  color:#1500fff1;
-  font-weight: bold;
-  text-align: left;
-  margin-top: 10px;
-  cursor: pointer;
+  background-color: #000;
 }
 
 
@@ -45,6 +46,28 @@ input {
   background: #0d5acede;
 }
 
-#forgot-password:hover{
-  background: #cad9eede;
+.signup-container {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
+  padding: 30px;
+  background-color: #f0f4f8;
+}
+
+.signup-container {
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+  background-color: #f0f4f8;
+}
+
+.logo {
+  display: block;
+  height: 50px;
+  width: 50%; /* Changed from 100px to 100% */
+  margin: 0 auto 20px;
+}
+
+.login-link {
+  margin-top: 15px;
+  color: #000;
 }

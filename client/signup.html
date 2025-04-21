@@ -8,20 +8,35 @@
     <link rel="stylesheet" href="css/nav.css"/>
     <link rel="stylesheet" href="css/signup.css"/>
     <link rel="stylesheet" href="css/footer.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
+<header> <img src="./images/logo20x4.png" alt="Scriptorium Logo" class="logo" /></header>
 <body>
-  <header>
-    <img src="./images/logo20x4.png" alt="Scriptorium Logo" class="logo" />
-</header>
-  <main>
+  <main class = "signup-container">
     <section id="signup-section">
       <form id="signup-form">
-        <input type="username" id="username" placeholder="Username" autocomplete="off" /><br>
-        <input type="email" id="email" placeholder="Email" autocomplete="off" /><br>
-        <input type="password" id="password" placeholder="Password" autocomplete="off" /><br>
-        <button id="signup-btn">Sign Up</button><br>
-        <br><small>Already have an account? <a href="login.html">Log In</a></small><br>
+        <section class = "input-group">
+          <i class="fa-solid fa-user"></i>
+          <input type="username" id="username" placeholder="Username" autocomplete="off" />
+        </section>
+
+        <section class = "input-group">
+          <i class="fa-solid fa-envelope"></i>
+          <input type="email" id="email" placeholder="Email" autocomplete="off" /><br>
+        </section>
         
+        <section class = "input-group">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" id="password" placeholder="Password" autocomplete="off" /><br>
+        </section>
+        
+        <section class = "input-group">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" id="confirm-password" placeholder="Confirm Password" autocomplete="off" /><br>
+        </section>
+        
+        <button id="signup-btn">Sign Up</button><br>
+        <p class="login-link">Already have an account? <a href="login.html">Log in</a></p>
       </form>
     </section>
   </main>
