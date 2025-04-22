@@ -21,12 +21,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(clientPath));
 
-app.use(cors({
-  origin: 'https://mango-bush-0fd241403.6.azurestaticapps.net',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type']
-}));
-
 app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');

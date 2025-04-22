@@ -27,6 +27,7 @@
   },
   "homepage": "https://github.com/Constitution-of-Homies/Homies-repo#readme",
   "dependencies": {
+    "@azure/functions": "^4.7.0",
     "@azure/storage-blob": "^12.27.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
@@ -36,6 +37,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",
+    "@babel/plugin-transform-modules-commonjs": "^7.26.3",
     "@babel/preset-env": "^7.26.9",
     "@firebase/testing": "^0.20.11",
     "@testing-library/dom": "^10.4.0",

@@ -58,7 +58,6 @@ onAuthStateChanged(auth, async (user) => {
     await loadUserUploads(user.uid);
   } catch (error) {
     console.error("Error loading user data:", error);
-    // Fallback to basic auth info if Firestore fails
     userNameElement.textContent = `Welcome, ${user.displayName || "User"}`;
     userEmailElement.textContent = `${user.email}`;
   }
@@ -69,7 +68,7 @@ if (signOutButton) {
   signOutButton.addEventListener("click", async () => {
     try {
       await signOut(auth);
-      window.location.href = "login.html";
+      window.location.href = "index.html";
     } catch (error) {
       console.error("Error signing out:", error);
       alert("Error signing out. Please try again.");
@@ -82,7 +81,7 @@ async function loadUserUploads(userId) {
   try {
     // Create a query against the uploads collection
     const uploadsQuery = query(
-      collection(db, "uploads"),
+      collection(db, "searchIndex"),
       where("userId", "==", userId),
       limit(5)
     );
