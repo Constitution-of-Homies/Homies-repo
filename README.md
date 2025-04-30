@@ -13,4 +13,17 @@
 git clone https://github.com/Constitution-of-Homies/Homies-repo
 cd Homies-repo
 npm init -y
-npm install express firebase firebase-admin cors @azure/storage-blob glob jest jsdom nodemon
+npm install
+```
+
+## Run Locally
+
+- In one terminal run:
+```bash
+node api/index
+```
+
+- In another terminal run:
+```bash
+swa start --app-location ./client --api-location http://localhost:3000
+```
