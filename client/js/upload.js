@@ -467,60 +467,32 @@ function addFileToList(fileName, url, success, errorMsg) {
 
 async function getSasUrl(blobName) {
   try {
-    console.log('Requesting SAS URL for:', blobName);
+    console.log('Requesting SAS URL for blob:', blobName);
     
-    // Add a timeout to the fetch request
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-    
-    const response = await fetch('/api/get-sas-url', {
+    // Use your Function App endpoint
+    const response = await fetch('https://scriptorium.azurewebsites.net/api/get-sas-url', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ blobName }),
-      signal: controller.signal
-    }).catch(err => {
-      console.error('Fetch error:', err);
-      throw new Error(`Network error: ${err.message}`);
     });
-    
-    clearTimeout(timeoutId);
-    
-    console.log('Response status:', response.status);
-    console.log('Response headers:', [...response.headers.entries()]);
-    
-    // Check if the response is empty
-    const text = await response.text();
-    console.log('Response body length:', text.length);
-    console.log('Response body preview:', text.substring(0, 100));
-    
-    if (!text) {
-      throw new Error('Server returned an empty response');
-    }
-    
-    // Try to parse the text as JSON
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (parseError) {
-      console.error('Failed to parse server response as JSON:', text);
-      throw new Error(`Invalid JSON response: ${parseError.message}`);
-    }
-    
-    // Check if the request was successful
+
     if (!response.ok) {
-      throw new Error(data.message || data.error || `Server returned status ${response.status}`);
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Server returned an error');
     }
+
+    const data = await response.json();
     
-    // Ensure the sasUrl is present
     if (!data.sasUrl) {
-      throw new Error('Server response missing sasUrl');
+      throw new Error('Server did not return a valid SAS URL');
     }
-    
+
+    console.log('Received SAS URL:', data.sasUrl);
     return data.sasUrl;
   } catch (error) {
-    console.error('Error getting SAS URL:', error);
-    throw error;
+    console.error('Error in getSasUrl:', error);
+    throw new Error(`Failed to get SAS URL: ${error.message}`);
   }
-} 
+}
