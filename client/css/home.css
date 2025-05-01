@@ -34,6 +34,15 @@ nav:hover {
     width: 220px;
 }
 
+.nav-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    padding: 0.5rem 1rem;
+    width: 100%;
+}
+
 .logo {
     padding: 15px;
     border-bottom: 1px solid var(--accent-color);
@@ -98,6 +107,16 @@ li i {
     position: absolute;
     left: 20px;
     filter: invert(100%) sepia(0%) saturate(7500%) hue-rotate(329deg) brightness(104%) contrast(101%);
+}
+
+.user-avatar {
+    width: 24px;
+    height: 24px;
+    object-fit: cover;
+    position: absolute;
+    left: 18px;
+    /* No filter applied */
+    border: 2px solid var(--text-color);
 }
 
 .nav-text {

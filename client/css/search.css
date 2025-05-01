@@ -56,8 +56,8 @@
 }
 
 .filter-icon {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   filter: invert(100%) sepia(0%) saturate(7500%) hue-rotate(329deg) brightness(104%) contrast(101%);
 }
 

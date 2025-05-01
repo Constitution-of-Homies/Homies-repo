@@ -51,7 +51,7 @@ document.getElementById("login-btn").addEventListener("click", async (e) => {
         //     console.log("No user data found!");
         // }
         
-        window.location.href = "./admin-page.html";
+        window.location.href = "./index.html";
     } catch (error) {
         console.error("Error signing in:", error.code, error.message);
         let errorMessage = "Login failed. ";
@@ -131,7 +131,7 @@ document.getElementById("google-login-btn").addEventListener("click", async (e) 
       }, { merge: true });
       
       console.log("Google login successful:", user.uid);
-      window.location.href = "admin-page.html";
+      window.location.href = "index.html";
   } catch (error) {
       console.error("Error:", error.code, error.message);
       

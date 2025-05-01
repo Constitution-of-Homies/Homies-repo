@@ -1,61 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Scriptorium</title>
-  <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/nav.css" />
-  <link rel="stylesheet" href="css/footer.css" />
-  <link rel="stylesheet" href="css/search.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scriptorium</title>
+    <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/search.css">
+    <!-- Removed Font Awesome links -->
 </head>
 <body>
-  <header>
-    <img src="./images/logo20x4.png" alt="Scriptorium Logo" class="logo" />
     <nav>
-      <ul>
-        <li><a href="#">Home</a></li>
-        <li><a href="login.html">Login</a></li>
-        <li><a href="signup.html">Sign Up</a></li>
-        <!-- <li><a href="#" class="profile"></a></li> -->
-      </ul>
+        <section class="logo">
+            <img src="./images/1x1-dark-feather.png" alt="Scriptorium Logo" class="logo-img">
+            <p class="logo-text">Scriptorium</p>
+        </section>
+        
+        <ul>
+            <li>
+                <img src="./images/icons/home.png" alt="Home" class="nav-icon">
+                <p class="nav-text">Home</p>
+            </li>
+            <li>
+                <img src="./images/icons/dashboard.png" alt="Dashboard" class="nav-icon">
+                <p class="nav-text">Dashboard</p>
+            </li>
+            <!-- <li>
+                <img src="./images/icons/documents.png" alt="Documents" class="nav-icon">
+                <p class="nav-text">Documents</p>
+            </li> -->
+            <li>
+                <img src="./images/icons/settings.png" alt="Settings" class="nav-icon">
+                <p class="nav-text">Settings</p>
+            </li>
+            <!-- <li>
+                <img src="./images/icons/history.png" alt="History" class="nav-icon">
+                <p class="nav-text">History</p>
+            </li> -->
+        </ul>
+        
+        <section class="profile-section">
+            <li class="profile-item" aria-haspopup="true" aria-expanded="false">
+                <img src="./images/icons/user.png" alt="Profile" class="nav-icon">
+                <p class="nav-text">Profile</p>
+                
+                <ul class="profile-options">
+                  <li>
+                      <a href="login.html" class="nav-link">
+                          <img src="./images/icons/login.png" alt="Login" class="nav-icon">
+                          <p class="nav-text">Login</p>
+                      </a>
+                  </li>
+                  <li>
+                      <a href="signup.html" class="nav-link">
+                          <img src="./images/icons/signup.png" alt="Sign Up" class="nav-icon">
+                          <p class="nav-text">Sign Up</p>
+                      </a>
+                  </li>
+              </ul>
+            </li>
+        </section>
     </nav>
-  </header>
 
-  <main>
-    <!-- <section>
-      <h2>Welcome</h2>
-      <p>
-        This platform allows for the structured upload and public search of historical constitutional data
-        using natural language queries. Designed for researchers, historians, and the general public.
-      </p>
-    </section> -->
-    <section class="search-section">
-      <section class="search-container">
-        <h1>Search Constitutional Archives</h1>
-        <form class="search-form" action="#" method="GET">
-          <section class="search-bar">
-            <input type="text" placeholder="Ask a question about constitutional history..." class="search-input">
-            <button type="submit" class="search-button">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-                <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l4.25 4.25c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-              </svg>
-            </button>
-          </section>
-          <section class="search-suggestions">
-            <p>Try: </p>
-            <a href="#">19th century amendments</a>
-            <a href="#">Founding documents</a>
-            <a href="#">Judicial interpretations</a>
-          </section>
-        </form>
-      </section>
-    </section>
-  </main>
+    <main>
+        <section class="centered-content">
+            <img src="./images/logo-long.png" alt="Scriptorium" class="main-logo">
+            
+            <section class="search-container">
+                <input type="text" placeholder="Search..." class="search-input">
+                <button class="search-button">
+                    <img src="./images/icons/search.png" alt="Search" class="search-icon">
+                </button>
+                <button class="filter-button">
+                    <img src="./images/icons/filter.png" alt="Filters" class="filter-icon">
+                </button>
+            </section>
+            
+            <section class="filter-section">
+                <section class="filter-row">
+                    <section class="filter-group">
+                        <label>Type</label>
+                        <select>
+                            <option>All</option>
+                            <option>Documents</option>
+                            <option>Notes</option>
+                            <option>Images</option>
+                        </select>
+                    </section>
+                    <section class="filter-group">
+                        <label>Date</label>
+                        <select>
+                            <option>Any time</option>
+                            <option>Today</option>
+                            <option>This week</option>
+                            <option>This month</option>
+                        </select>
+                    </section>
+                </section>
+                <section class="filter-row">
+                    <section class="filter-group">
+                        <label>Author</label>
+                        <select>
+                            <option>All authors</option>
+                            <option>Me</option>
+                            <option>Collaborators</option>
+                        </select>
+                    </section>
+                    <section class="filter-group">
+                        <label>Tags</label>
+                        <input type="text" placeholder="Enter tags...">
+                    </section>
+                </section>
+            </section>
+        </section>
+    </main>
 
-  <footer>
-    <small>© 2025 Scriptorium</small>
-  </footer>
+    <script type="module" src="./js/home.js"></script>
 </body>
 </html>

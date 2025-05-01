@@ -4,6 +4,7 @@ form{
 }
 
 #signup-section {
+  position: relative; /* Add this for close button positioning */
   max-width: 500px; 
   margin: 2rem auto;
   padding: 2.5rem;
@@ -20,6 +21,21 @@ form{
   display: block;
 }
 
+.close-btn {
+  position: absolute;
+  right: 1.5rem;
+  top: 1.5rem;
+  font-size: 2rem;
+  font-weight: 300;
+  color: #888;
+  text-decoration: none;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.close-btn:hover {
+  color: red;
+}
 
 #signup-form {
   text-align: center;
@@ -42,7 +58,6 @@ form{
   box-shadow: 0 0 0 2px rgba(21, 0, 255, 0.1);
 }
 
-
 #signup-btn {
   width: 100%;
   padding: 14px 16px;
@@ -55,7 +70,6 @@ form{
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
-
 
 #signup-btn:hover{
   background: #333;
@@ -104,7 +118,7 @@ form{
   right: 0;
 }
 
-.google-login-btn { /* Changed from .google-login-btn to match your JS */
+.google-login-btn {
   width: 100%;
   padding: 12px;
   background: white;
