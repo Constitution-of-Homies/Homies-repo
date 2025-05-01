@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scriptorium - Profile</title>
+    <link rel="stylesheet" href="css/profile.css"/>
+    <link rel="stylesheet" href="css/footer.css" />
+</head>
+<body>
+    <header>
+        <h1>Scriptorium</h1>
+        <input type="text" id="search-input" placeholder="Search here..."/>
+        <button id="submit-search"><img src="images/search.png" width="30" height="30"></button> <!--To place an icon-->
+    </header>
+    <main class="dashboard-layout">
+        <section class="side-menu">
+            <nav>
+                <ul>
+                    <li><h2><img src="images/scriptorium.png" width="45" height="20"> My Dashboard</h2></li>
+                    <li><a href="#"><img src="images/upload.png" width="18" height="18"> Content Management</a></li>
+                    <li><a href="#"><img src="images/access.png" width="18" height="18"> Permissions</a></li>
+                    <li><a href="#"><img src="images/analytics.png" width="18" height="18"> Analytics</a></li>
+                    <li><a href="#"><img src="images/support.png" width="18" height="18"> Support</a></li>
+                    <li><a href="#"><img src="images/faq.png" width="18" height="18"> FAQ</a></li>
+                </ul>
+            </nav>
+            <button id="sign-out-btn"><img src="images/sign-out.png" width="20" height="20">Sign Out</button>
+        </section>
+        
+        <section class="main-section">
+            <section class="profile-section">
+                <img src="images/profile.png" alt="Profile" class="profile-image" />
+                <section class="profile-info">
+                    <h3>Dr. Umar Rashad Humkisoon</h3>
+                    <p>Associate Professor @ University of Farm Lands</p>
+                </section>
+                <button id="edit-profile-btn">Edit</button>
+            </section>
+
+            <section class="recent-uploads">
+                <h2>Recent Uploads</h2>
+    
+                <!-- Example Uploads -->
+                <article class="upload-item">
+                    <section class="file-icon file-pdf">PDF</section>
+                    <section class="upload-info">
+                        <h3>Understanding Plant Immunity</h3>
+                        <p>March 28, 2025</p>
+                        <p class="upload-stats">112 views • 45 downloads</p>
+                    </section>
+                    <button class="edit-btn">Edit</button>
+                </article>
+    
+                <article class="upload-item">
+                    <section class="file-icon file-doc">DOC</section>
+                    <section class="upload-info">
+                        <h3>Sustainable Agriculture Seminar</h3>
+                        <p>February 15, 2025</p>
+                        <p class="upload-stats">89 views • 34 downloads</p>
+                    </section>
+                    <button class="edit-btn">Edit</button>
+                </article>
+                <!-- Add more as needed -->
+            </section>
+        </section>
+
+        <section id="edit-drawer" class="drawer hidden">
+            <div class="drawer-backdrop"></div>
+            <section class="edit-profile-drawer">
+                <h2>Edit Profile</h2>
+                <form>
+                    <section class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" value="Dr. Umar Rashad Humkisoon">
+                    </section>
+
+                    <section class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" value="umargotemail@example.com">
+                    </section>
+                    
+                    <section class="form-group">
+                        <label for="bio">Bio</label>
+                        <input type="text" id="bio" value="Associate Professor @ University of Farm Lands">
+                    </section>
+                    
+                    <section class="form-group">
+                        <label for="city-town">City/Town</label>
+                        <input type="text" id="city-town" value="Steppaz">
+                    </section>
+
+                    <section class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="name" value="Dr. Umar Rashad Humkisoon">
+                    </section>
+
+                    <section class="form-actions">
+                        <button id="save-btn">Save</button>
+                        <button id="cancel-btn">Cancel</button>
+                    </section>
+                </form>
+            </section>
+        </section>
+    </main>
+    <footer>
+        <small>&copy; 2025 Scriptorium</small>
+    </footer>
+    <script src="js/profile.js"></script>
+</body>
+</html>
