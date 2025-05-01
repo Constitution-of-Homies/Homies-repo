@@ -269,3 +269,106 @@ body {
   border-radius: var(--border-radius);
   box-shadow: var(--shadow);
 }
+
+/* Add to existing CSS */
+
+/* Breadcrumbs */
+.breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.breadcrumb {
+  background: none;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-size: 0.9rem;
+  color: var(--accent-color);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.breadcrumb:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb::after {
+  content: '›';
+  margin-left: 8px;
+  color: var(--primary-color);
+}
+
+.breadcrumb:last-child::after {
+  content: '';
+}
+
+.breadcrumb.home {
+  font-weight: bold;
+}
+
+/* Directory controls */
+.directory-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.action-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  background: var(--accent-color);
+  color: white;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  background: #005ea2;
+  transform: translateY(-2px);
+}
+
+/* Folder items */
+.folder-card {
+  background: #ffffff;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: 15px;
+  display: flex;
+  gap: 15px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-left: 4px solid #FFA500;
+  cursor: pointer;
+}
+
+.folder-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.folder-icon {
+  font-size: 2.5rem;
+  display: flex;
+  align-items: center;
+  color: #FFA500;
+}
+
+.folder-details h3 {
+  margin: 0 0 6px 0;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.folder-meta {
+  color: #888;
+  font-size: 0.85rem;
+}

@@ -15,6 +15,21 @@
         <button class="back-button" onclick="window.location.href='admin-page.html'">
             ← Go Back
         </button>
+
+        <!-- Add directory navigation breadcrumbs -->
+        <nav id="directory-breadcrumbs" class="breadcrumbs">
+            <button class="breadcrumb home" data-path="">Home</button>
+        </nav>
+
+
+        <!-- Add new directory controls -->
+        <section class="directory-controls">
+            <button id="create-folder-btn" class="action-btn">Create Folder</button>
+            <button id="upload-file-btn" class="action-btn">Upload File</button>
+        </section>
+
+
+
         <section id="files-container"></section>
     </main>
 
@@ -44,6 +59,21 @@
             </form>
         </section>
     </section>
+
+    <!-- Add this right before the closing </body> tag -->
+<section id="folder-modal" class="modal">
+    <section class="modal-content">
+      <h2>Create New Folder</h2>
+      <form id="folder-form">
+        <label for="folder-name">Folder Name</label>
+        <input type="text" id="folder-name" name="name" required>
+        <section class="modal-actions">
+          <button type="button" id="cancel-folder">Cancel</button>
+          <button type="submit">Create</button>
+        </section>
+      </form>
+    </section>
+  </section>
 
     <script type="module" src="js/ViewUpload.js"></script>
 </body>
