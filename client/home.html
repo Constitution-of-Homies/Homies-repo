@@ -6,6 +6,7 @@
     <title>Scriptorium</title>
     <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/search.css">
     <!-- Removed Font Awesome links -->
 </head>
 <body>
@@ -58,9 +59,56 @@
     </nav>
 
     <main>
-        <h1>Welcome to Scriptorium</h1>
-        <p>Your digital writing workspace. Hover over the left side to expand the navigation bar.</p>
-        <p>The navigation will reveal more options when expanded, including your profile settings at the bottom.</p>
+        <section class="centered-content">
+            <img src="./images/logo-long.png" alt="Scriptorium" class="main-logo">
+            
+            <section class="search-container">
+                <input type="text" placeholder="Search..." class="search-input">
+                <button class="search-button">
+                    <img src="./images/icons/search.png" alt="Search" class="search-icon">
+                </button>
+                <button class="filter-button">
+                    <img src="./images/icons/filter.png" alt="Filters" class="filter-icon">
+                </button>
+            </section>
+            
+            <section class="filter-section">
+                <section class="filter-row">
+                    <section class="filter-group">
+                        <label>Type</label>
+                        <select>
+                            <option>All</option>
+                            <option>Documents</option>
+                            <option>Notes</option>
+                            <option>Images</option>
+                        </select>
+                    </section>
+                    <section class="filter-group">
+                        <label>Date</label>
+                        <select>
+                            <option>Any time</option>
+                            <option>Today</option>
+                            <option>This week</option>
+                            <option>This month</option>
+                        </select>
+                    </section>
+                </section>
+                <section class="filter-row">
+                    <section class="filter-group">
+                        <label>Author</label>
+                        <select>
+                            <option>All authors</option>
+                            <option>Me</option>
+                            <option>Collaborators</option>
+                        </select>
+                    </section>
+                    <section class="filter-group">
+                        <label>Tags</label>
+                        <input type="text" placeholder="Enter tags...">
+                    </section>
+                </section>
+            </section>
+        </section>
     </main>
 
     <script src="js/home.js"></script>
