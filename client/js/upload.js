@@ -324,6 +324,7 @@ async function addToFirestoreCollections(fileData, fileUrl, user) {
     lastModified: fileData.metadata.lastModified,
     uploadedBy: user.uid,
     uploadedAt: timestamp,
+    path: "/",
     metadata: {
       title: metadata.title,
       description: metadata.description,

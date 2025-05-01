@@ -1,5 +1,17 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-import { getFirestore, collection, query, where, getDocs, doc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+import { 
+  getFirestore, 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  doc, 
+  updateDoc, 
+  deleteDoc, 
+  getDoc,
+  addDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
 import { auth, db } from "./firebase.js";
 
@@ -13,8 +25,13 @@ const fileIcons = {
   archive: '🗄️',
   code: '💻',
   pdf: '📕',
-  default: '📁'
+  folder: '📁',
+  default: '📄'
 };
+
+// Current directory path state
+let currentPath = '';
+let currentPathArray = [];
 
 // Wait for DOM to be fully loaded before executing
 document.addEventListener('DOMContentLoaded', () => {
@@ -27,14 +44,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (user) {
       displayFiles(user.uid);
+      setupEventListeners(user.uid);
     } else {
       filesContainer.innerHTML = 
         '<p class="auth-message">Please sign in to view your files</p>';
     }
   });
+});
 
-  // Event delegation for edit and delete buttons
-  document.addEventListener('click', (e) => {
+function setupEventListeners(userId) {
+  // Event delegation for edit, delete, and folder navigation
+  document.addEventListener('click', async (e) => {
     if (e.target.classList.contains('edit-btn')) {
       const docId = e.target.dataset.docId;
       const title = e.target.dataset.title || 'Untitled';
@@ -48,8 +68,61 @@ document.addEventListener('DOMContentLoaded', () => {
       if (confirm('Are you sure you want to delete this file?')) {
         deleteFile(docId, blobName);
       }
+    } else if (e.target.classList.contains('breadcrumb')) {
+      const path = e.target.dataset.path || '';
+      navigateToDirectory(path);
+    } else if (e.target.closest('.folder-card')) {
+      const folderCard = e.target.closest('.folder-card');
+      const path = folderCard.dataset.path;
+      navigateToDirectory(path);
+    } else if (e.target.classList.contains('delete-folder-btn')) {
+      const folderId = e.target.dataset.folderId;
+      if (confirm('Are you sure you want to delete this folder and all its contents?')) {
+        deleteFolder(folderId, userId);
+      }
     }
   });
+
+  // Create folder button
+  const createFolderBtn = document.getElementById('create-folder-btn');
+  if (createFolderBtn) {
+    createFolderBtn.addEventListener('click', () => {
+      document.getElementById('folder-modal').style.display = 'block';
+    });
+  }
+
+  // Upload file button (would need to be connected to your upload functionality)
+  const uploadFileBtn = document.getElementById('upload-file-btn');
+  if (uploadFileBtn) {
+    uploadFileBtn.addEventListener('click', () => {
+      // You would trigger your file upload dialog here
+      // Make sure to set the currentPath when uploading
+      alert('File upload would go here. Remember to set the path to: ' + currentPath);
+    });
+  }
+
+  // Folder form submission
+  const folderForm = document.getElementById('folder-form');
+  if (folderForm) {
+    folderForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const folderName = document.getElementById('folder-name').value.trim();
+      if (folderName) {
+        await createFolder(folderName, auth.currentUser.uid);
+        document.getElementById('folder-name').value = '';
+        document.getElementById('folder-modal').style.display = 'none';
+      }
+    });
+  }
+
+  // Cancel folder creation
+  const cancelFolderBtn = document.getElementById('cancel-folder');
+  if (cancelFolderBtn) {
+    cancelFolderBtn.addEventListener('click', () => {
+      document.getElementById('folder-name').value = '';
+      document.getElementById('folder-modal').style.display = 'none';
+    });
+  }
 
   // Handle edit form submission
   const editForm = document.getElementById('edit-form');
@@ -76,40 +149,69 @@ document.addEventListener('DOMContentLoaded', () => {
   if (cancelBtn) {
     cancelBtn.addEventListener('click', closeEditModal);
   }
-});
+}
 
 async function displayFiles(userId) {
   const container = document.getElementById('files-container');
-  if (!container) {
-    console.error("Files container element not found");
+  const breadcrumbs = document.getElementById('directory-breadcrumbs');
+  if (!container || !breadcrumbs) {
+    console.error("Required elements not found");
     return;
   }
 
   try {
-    console.log(`Fetching files for user: ${userId}`);
     container.innerHTML = '<section class="file-card">Loading...</section>';
     
-    let q = query(
-      collection(db, "archiveItems"), 
-      where("uploadedBy", "==", userId)
+    // Update breadcrumbs
+    updateBreadcrumbs();
+    
+    // Query for folders in current path
+    const foldersQuery = query(
+      collection(db, "folders"),
+      where("ownerId", "==", userId),
+      where("path", "==", currentPath)
     );
     
-    let querySnapshot = await getDocs(q);
+    const foldersSnapshot = await getDocs(foldersQuery);
     
-    console.log(`Found ${querySnapshot.size} documents`);
+    // Query for files in current path
+    const filesQuery = query(
+      collection(db, "archiveItems"), 
+      where("uploadedBy", "==", userId),
+      where("path", "==", currentPath)
+    );
+    
+    const filesSnapshot = await getDocs(filesQuery);
     
     container.innerHTML = '';
 
-    if (querySnapshot.empty) {
-      console.log("No files found");
-      container.innerHTML = '<p class="auth-message">No files found</p>';
+    if (foldersSnapshot.empty && filesSnapshot.empty) {
+      container.innerHTML = '<p class="empty-message">This folder is empty</p>';
       return;
     }
 
-    querySnapshot.forEach((doc) => {
+    // Display folders first
+    foldersSnapshot.forEach((doc) => {
+      const folder = doc.data();
+      const folderCard = document.createElement('section');
+      folderCard.className = 'folder-card';
+      folderCard.dataset.path = folder.fullPath;
+      folderCard.innerHTML = `
+        <section class="folder-icon">${fileIcons.folder}</section>
+        <section class="folder-details">
+          <h3>${folder.name}</h3>
+          <section class="folder-meta">
+            <p>Folder</p>
+            <p>Created: ${formatDate(folder.createdAt?.toDate())}</p>
+          </section>
+        </section>
+      `;
+      container.appendChild(folderCard);
+    });
+
+    // Then display files
+    filesSnapshot.forEach((doc) => {
       const file = doc.data();
-      console.log("Processing file document:", file);
-      
       const fileType = getSimplifiedType(file.type);
       const fileIcon = fileIcons[fileType] || fileIcons.default;
 
@@ -144,7 +246,7 @@ async function displayFiles(userId) {
                 data-description="${file.metadata?.description || ''}"
                 data-tags="${file.metadata?.tags?.join(', ') || ''}"
                 data-category="${file.metadata?.category || 'general'}">Edit</button>
-              <button class="delete-btn" data-doc-id="${doc.id}" data-blob-name="${file.path || ''}">Delete</button>
+                <button class="delete-btn" data-doc-id="${doc.id}" data-blob-name="${file.path || ''}">Delete</button>
             </section>
           </section>
         `;
@@ -160,6 +262,105 @@ async function displayFiles(userId) {
       '<p class="error-message">Error loading files. Please check console for details.</p>';
   }
 }
+
+function updateBreadcrumbs() {
+  const breadcrumbs = document.getElementById('directory-breadcrumbs');
+  if (!breadcrumbs) return;
+
+  // Clear existing breadcrumbs except Home
+  while (breadcrumbs.children.length > 1) {
+    breadcrumbs.removeChild(breadcrumbs.lastChild);
+  }
+
+  // Parse current path and build breadcrumbs
+  currentPathArray = currentPath ? currentPath.split('/').filter(Boolean) : [];
+  
+  let accumulatedPath = '';
+  currentPathArray.forEach((folder, index) => {
+    accumulatedPath += `${folder}/`;
+    const breadcrumb = document.createElement('button');
+    breadcrumb.className = 'breadcrumb';
+    breadcrumb.dataset.path = accumulatedPath;
+    breadcrumb.textContent = folder;
+    breadcrumbs.appendChild(breadcrumb);
+  });
+}
+
+function navigateToDirectory(path) {
+  currentPath = path;
+  const user = auth.currentUser;
+  if (user) {
+    displayFiles(user.uid);
+  }
+}
+
+async function createFolder(folderName, userId) {
+  try {
+    const fullPath = currentPath ? `${currentPath}${folderName}/` : `${folderName}/`;
+    
+    await addDoc(collection(db, "folders"), {
+      name: folderName,
+      path: currentPath,
+      fullPath: fullPath,
+      ownerId: userId,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    
+    // Refresh the view
+    displayFiles(userId);
+  } catch (error) {
+    console.error("Error creating folder:", error);
+    alert("Failed to create folder. Please try again.");
+  }
+}
+
+/*async function deleteFolder(folderId, userId) {
+  try {
+    // First check if folder is empty
+    const folderRef = doc(db, "folders", folderId);
+    const folderDoc = await getDoc(folderRef);
+    
+    if (!folderDoc.exists()) {
+      alert("Folder not found");
+      return;
+    }
+    
+    const folderData = folderDoc.data();
+    
+    // Check for subfolders
+    const subfoldersQuery = query(
+      collection(db, "folders"),
+      where("path", "==", folderData.fullPath)
+    );
+    const subfoldersSnapshot = await getDocs(subfoldersQuery);
+    
+    if (!subfoldersSnapshot.empty) {
+      alert("Cannot delete folder: It contains subfolders");
+      return;
+    }
+    
+    // Check for files in folder
+    const filesQuery = query(
+      collection(db, "archiveItems"),
+      where("path", "==", folderData.fullPath)
+    );
+    const filesSnapshot = await getDocs(filesQuery);
+    
+    if (!filesSnapshot.empty) {
+      alert("Cannot delete folder: It contains files");
+      return;
+    }
+    
+    // If empty, delete the folder
+    await deleteDoc(folderRef);
+    displayFiles(userId);
+    
+  } catch (error) {
+    console.error("Error deleting folder:", error);
+    alert("Failed to delete folder. Please try again.");
+  }
+}*/
 
 // Helper function to test URL accessibility
 async function testUrlAccessibility(url) {
@@ -234,6 +435,9 @@ async function updateFileMetadata(docId, metadata) {
 
 // Delete file from Azure Blob Storage and Firestore
 async function deleteFile(docId, blobName) {
+  const user = auth.currentUser;
+  if (!user) return;
+
   try {
     // Delete from Azure Blob Storage
     if (blobName) {
@@ -275,21 +479,16 @@ async function deleteFile(docId, blobName) {
     });
 
     // Remove from user's uploads
-    const user = auth.currentUser;
-    if (user) {
-      const userRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userRef);
-      if (userDoc.exists()) {
-        const uploads = userDoc.data().uploads || [];
-        const updatedUploads = uploads.filter(upload => upload.itemId !== docId);
-        await updateDoc(userRef, { uploads: updatedUploads });
-      }
+    const userRef = doc(db, "users", user.uid);
+    const userDoc = await getDoc(userRef);
+    if (userDoc.exists()) {
+      const uploads = userDoc.data().uploads || [];
+      const updatedUploads = uploads.filter(upload => upload.itemId !== docId);
+      await updateDoc(userRef, { uploads: updatedUploads });
     }
 
     // Refresh the file list
-    if (user) {
-      displayFiles(user.uid);
-    }
+    displayFiles(user.uid);
   } catch (error) {
     console.error("Error deleting file:", error);
     alert("Failed to delete file. Please try again.");
