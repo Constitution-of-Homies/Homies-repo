@@ -10,11 +10,13 @@ import {
   deleteDoc, 
   getDoc,
   addDoc,
-  serverTimestamp
+  serverTimestamp,
+  arrayUnion
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
 import { auth, db } from "./firebase.js";
 
+// File type icons
 const fileIcons = {
   image: '🖼️',
   video: '🎬',
@@ -32,6 +34,75 @@ const fileIcons = {
 // Current directory path state
 let currentPath = '';
 let currentPathArray = [];
+
+// Create hidden file input
+const fileInput = document.createElement('input');
+fileInput.type = 'file';
+fileInput.id = 'fileInput';
+fileInput.className = 'drop-zone__input';
+fileInput.multiple = true;
+fileInput.style.display = 'none';
+document.body.appendChild(fileInput);
+
+// Utility functions
+function formatFileSize(bytes) {
+  if (typeof bytes !== 'number') return 'Unknown size';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(1)} MB`;
+  return `${(bytes / 1073741824).toFixed(1)} GB`;
+}
+
+function detectFileType(file) {
+  const type = file.type ? file.type.toLowerCase() : '';
+  if (type.includes('image')) return 'image';
+  if (type.includes('video')) return 'video';
+  if (type.includes('audio')) return 'audio';
+  if (type.includes('pdf')) return 'pdf';
+  if (type.includes('spreadsheet') || type.includes('excel')) return 'spreadsheet';
+  if (type.includes('presentation') || type.includes('powerpoint')) return 'presentation';
+  if (type.includes('zip') || type.includes('rar') || type.includes('tar') || type.includes('7z')) return 'archive';
+  if (type.includes('text') || type.includes('javascript') || type.includes('python') || type.includes('java') || type.includes('html') || type.includes('css')) return 'code';
+  if (file.name) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
+    if (['mp4', 'mov', 'avi', 'mkv'].includes(ext)) return 'video';
+    if (['mp3', 'wav', 'ogg'].includes(ext)) return 'audio';
+    if (['pdf'].includes(ext)) return 'pdf';
+    if (['xls', 'xlsx', 'csv'].includes(ext)) return 'spreadsheet';
+    if (['ppt', 'pptx'].includes(ext)) return 'presentation';
+    if (['zip', 'rar', 'tar', 'gz', '7z'].includes(ext)) return 'archive';
+    if (['txt', 'js', 'py', 'java', 'html', 'css', 'json'].includes(ext)) return 'code';
+  }
+  return type.split('/')[0] || 'default';
+}
+
+function getFileIcon(type) {
+  return fileIcons[type] || fileIcons.default;
+}
+
+function formatDate(date) {
+  if (!date) return 'Unknown date';
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+function getSimplifiedType(fileType) {
+  if (!fileType) return 'default';
+  const type = fileType.toLowerCase();
+  if (type.includes('image')) return 'image';
+  if (type.includes('video')) return 'video';
+  if (type.includes('audio')) return 'audio';
+  if (type.includes('pdf')) return 'pdf';
+  if (type.includes('spreadsheet') || type.includes('excel')) return 'spreadsheet';
+  if (type.includes('presentation') || type.includes('powerpoint')) return 'presentation';
+  if (type.includes('zip') || type.includes('rar') || type.includes('tar') || type.includes('7z')) return 'archive';
+  if (type.includes('text') || type.includes('javascript') || type.includes('python') || type.includes('java') || type.includes('html') || type.includes('css')) return 'code';
+  return type.split('/')[0] || 'default';
+}
 
 // Wait for DOM to be fully loaded before executing
 document.addEventListener('DOMContentLoaded', () => {
@@ -62,6 +133,10 @@ function setupEventListeners(userId) {
       const tags = e.target.dataset.tags || '';
       const category = e.target.dataset.category || 'general';
       openEditModal(docId, title, description, tags, category);
+    } else if (e.target.classList.contains('rename-folder-btn')) {
+      const folderId = e.target.dataset.folderId;
+      const currentName = e.target.dataset.currentName || '';
+      openRenameFolderModal(folderId, currentName);
     } else if (e.target.classList.contains('delete-btn')) {
       const docId = e.target.dataset.docId;
       const blobName = e.target.dataset.blobName;
@@ -71,6 +146,10 @@ function setupEventListeners(userId) {
     } else if (e.target.classList.contains('breadcrumb')) {
       const path = e.target.dataset.path || '';
       navigateToDirectory(path);
+    } else if (e.target.classList.contains('move-btn')) {
+      const docId = e.target.dataset.docId;
+      const currentPath = e.target.dataset.currentPath || '';
+      openMoveModal(docId, currentPath);
     } else if (e.target.closest('.folder-card')) {
       const folderCard = e.target.closest('.folder-card');
       const path = folderCard.dataset.path;
@@ -91,15 +170,42 @@ function setupEventListeners(userId) {
     });
   }
 
-  // Upload file button (would need to be connected to your upload functionality)
+  // Upload file button
   const uploadFileBtn = document.getElementById('upload-file-btn');
   if (uploadFileBtn) {
     uploadFileBtn.addEventListener('click', () => {
-      // You would trigger your file upload dialog here
-      // Make sure to set the currentPath when uploading
-      alert('File upload would go here. Remember to set the path to: ' + currentPath);
+      fileInput.click();
     });
   }
+
+  // Move form submission
+  const moveForm = document.getElementById('move-form');
+  if (moveForm) {
+    moveForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const docId = moveForm.dataset.docId;
+      const targetPath = document.getElementById('target-folder').value;
+      await moveFile(docId, targetPath);
+    });
+  }
+
+  // Cancel move button
+  const cancelMoveBtn = document.getElementById('cancel-move');
+  if (cancelMoveBtn) {
+    cancelMoveBtn.addEventListener('click', closeMoveModal);
+  }
+
+  // Handle file selection
+  fileInput.addEventListener('change', async () => {
+    if (fileInput.files.length > 0) {
+      const userId = auth.currentUser?.uid;
+      if (!userId) {
+        alert('Please sign in to upload files.');
+        return;
+      }
+      await handleFileUpload(fileInput.files, userId);
+    }
+  });
 
   // Folder form submission
   const folderForm = document.getElementById('folder-form');
@@ -124,7 +230,26 @@ function setupEventListeners(userId) {
     });
   }
 
-  // Handle edit form submission
+  // Rename folder form submission
+  const renameFolderForm = document.getElementById('rename-folder-form');
+  if (renameFolderForm) {
+    renameFolderForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const folderId = renameFolderForm.dataset.folderId;
+      const newName = document.getElementById('new-folder-name').value.trim();
+      if (newName) {
+        await renameFolder(folderId, newName);
+      }
+    });
+  }
+
+  // Cancel rename folder button
+  const cancelRenameBtn = document.getElementById('cancel-rename-folder');
+  if (cancelRenameBtn) {
+    cancelRenameBtn.addEventListener('click', closeRenameFolderModal);
+  }
+
+  // Edit form submission
   const editForm = document.getElementById('edit-form');
   if (editForm) {
     editForm.addEventListener('submit', async (e) => {
@@ -144,7 +269,7 @@ function setupEventListeners(userId) {
     });
   }
 
-  // Close modal on cancel
+  // Close edit modal on cancel
   const cancelBtn = document.getElementById('cancel-edit');
   if (cancelBtn) {
     cancelBtn.addEventListener('click', closeEditModal);
@@ -204,6 +329,13 @@ async function displayFiles(userId) {
             <p>Folder</p>
             <p>Created: ${formatDate(folder.createdAt?.toDate())}</p>
           </section>
+          <section class="folder-actions">
+            <button class="rename-folder-btn" 
+              data-folder-id="${doc.id}"
+              data-current-name="${folder.name}">Rename</button>
+            <button class="delete-folder-btn" 
+              data-folder-id="${doc.id}">Delete</button>
+          </section>
         </section>
       `;
       container.appendChild(folderCard);
@@ -246,7 +378,10 @@ async function displayFiles(userId) {
                 data-description="${file.metadata?.description || ''}"
                 data-tags="${file.metadata?.tags?.join(', ') || ''}"
                 data-category="${file.metadata?.category || 'general'}">Edit</button>
-                <button class="delete-btn" data-doc-id="${doc.id}" data-blob-name="${file.path || ''}">Delete</button>
+              <button class="move-btn" 
+                data-doc-id="${doc.id}"
+                data-current-path="${file.path || ''}">Move</button>
+              <button class="delete-btn" data-doc-id="${doc.id}" data-blob-name="${file.path || ''}">Delete</button>
             </section>
           </section>
         `;
@@ -315,52 +450,137 @@ async function createFolder(folderName, userId) {
   }
 }
 
-/*async function deleteFolder(folderId, userId) {
+async function handleFileUpload(files, userId) {
   try {
-    // First check if folder is empty
-    const folderRef = doc(db, "folders", folderId);
-    const folderDoc = await getDoc(folderRef);
-    
-    if (!folderDoc.exists()) {
-      alert("Folder not found");
-      return;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const fileType = detectFileType(file);
+      const fileSize = formatFileSize(file.size);
+      const lastModified = new Date(file.lastModified).toLocaleString();
+      
+      // Generate unique filename with current path
+      const pathPrefix = currentPath ? `${userId}/${currentPath}` : `${userId}/`;
+      const uniqueFileName = `${pathPrefix}${new Date().getTime()}-${file.name}`;
+      
+      // Get SAS URL
+      const sasUrl = await getSasUrl(uniqueFileName);
+      
+      // Upload to Azure
+      await uploadToAzure(file, sasUrl, {
+        title: file.name,
+        description: '',
+        tags: '',
+        category: 'general'
+      });
+      
+      const fileUrl = sasUrl.split('?')[0];
+      
+      // Add to Firestore
+      const docRef = await addDoc(collection(db, "archiveItems"), {
+        name: file.name,
+        type: fileType,
+        size: file.size,
+        url: fileUrl,
+        lastModified: lastModified,
+        uploadedBy: userId,
+        uploadedAt: serverTimestamp(),
+        path: currentPath,
+        metadata: {
+          title: file.name,
+          description: '',
+          tags: [],
+          category: 'general'
+        },
+        status: 'active',
+        views: 0,
+        downloads: 0
+      });
+
+      // Update the user's document
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, {
+        uploads: arrayUnion({
+          itemId: docRef.id,
+          name: file.name,
+          type: fileType,
+          uploadedAt: new Date().toISOString(),
+          url: fileUrl
+        }),
+        lastUpload: serverTimestamp()
+      });
     }
     
-    const folderData = folderDoc.data();
-    
-    // Check for subfolders
-    const subfoldersQuery = query(
-      collection(db, "folders"),
-      where("path", "==", folderData.fullPath)
-    );
-    const subfoldersSnapshot = await getDocs(subfoldersQuery);
-    
-    if (!subfoldersSnapshot.empty) {
-      alert("Cannot delete folder: It contains subfolders");
-      return;
-    }
-    
-    // Check for files in folder
-    const filesQuery = query(
-      collection(db, "archiveItems"),
-      where("path", "==", folderData.fullPath)
-    );
-    const filesSnapshot = await getDocs(filesQuery);
-    
-    if (!filesSnapshot.empty) {
-      alert("Cannot delete folder: It contains files");
-      return;
-    }
-    
-    // If empty, delete the folder
-    await deleteDoc(folderRef);
+    // Refresh the file list
     displayFiles(userId);
-    
+    alert('Files uploaded successfully!');
+    fileInput.value = ''; // Clear the file input
   } catch (error) {
-    console.error("Error deleting folder:", error);
-    alert("Failed to delete folder. Please try again.");
+    console.error('Error uploading files:', error);
+    alert('Error uploading files: ' + error.message);
   }
-}*/
+}
+
+async function uploadToAzure(file, sasUrl, metadata) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        console.log(`Upload progress: ${percent}%`);
+      }
+    };
+
+    xhr.onload = () => {
+      xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`));
+    };
+
+    xhr.onerror = () => reject(new Error('Network error during upload'));
+
+    xhr.open('PUT', sasUrl, true);
+    xhr.setRequestHeader('x-ms-blob-type', 'BlockBlob');
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    
+    // Add metadata headers
+    xhr.setRequestHeader('x-ms-meta-title', metadata.title);
+    xhr.setRequestHeader('x-ms-meta-description', metadata.description);
+    xhr.setRequestHeader('x-ms-meta-tags', metadata.tags);
+    xhr.setRequestHeader('x-ms-meta-category', metadata.category);
+    
+    xhr.send(file);
+  });
+}
+
+async function getSasUrl(blobName) {
+  try {
+    console.log('Requesting SAS URL for blob:', blobName);
+    
+    const response = await fetch('https://scriptorium.azurewebsites.net/api/get-sas-url', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ blobName }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Server returned an error');
+    }
+
+    const data = await response.json();
+    
+    if (!data.sasUrl) {
+      throw new Error('Server did not return a valid SAS URL');
+    }
+
+    console.log('Received SAS URL:', data.sasUrl);
+    return data.sasUrl;
+  } catch (error) {
+    console.error('Error in getSasUrl:', error);
+    throw new Error(`Failed to get SAS URL: ${error.message}`);
+  }
+}
 
 // Helper function to test URL accessibility
 async function testUrlAccessibility(url) {
@@ -396,6 +616,124 @@ function closeEditModal() {
   const modal = document.getElementById('edit-modal');
   if (modal) {
     modal.style.display = 'none';
+  }
+}
+
+// Open move modal
+function openMoveModal(docId, currentPath) {
+  const modal = document.getElementById('move-modal');
+  const form = document.getElementById('move-form');
+  const currentFolderDisplay = document.getElementById('current-folder');
+  const folderSelect = document.getElementById('target-folder');
+
+  if (modal && form && currentFolderDisplay && folderSelect) {
+    form.dataset.docId = docId;
+    currentFolderDisplay.textContent = currentPath || 'Root';
+    
+    // Clear existing options
+    folderSelect.innerHTML = '';
+    
+    // Add default option
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = 'Root Folder';
+    folderSelect.appendChild(defaultOption);
+    
+    // Load available folders
+    loadAvailableFolders(auth.currentUser.uid, folderSelect);
+    
+    modal.style.display = 'block';
+  }
+}
+
+async function loadAvailableFolders(userId, selectElement) {
+  try {
+    const foldersQuery = query(
+      collection(db, "folders"),
+      where("ownerId", "==", userId)
+    );
+    
+    const foldersSnapshot = await getDocs(foldersQuery);
+    
+    foldersSnapshot.forEach((doc) => {
+      const folder = doc.data();
+      const option = document.createElement('option');
+      option.value = folder.fullPath;
+      option.textContent = folder.name;
+      selectElement.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Error loading folders:", error);
+  }
+}
+
+function closeMoveModal() {
+  const modal = document.getElementById('move-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+async function moveFile(docId, targetPath) {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  try {
+    const docRef = doc(db, "archiveItems", docId);
+    await updateDoc(docRef, {
+      path: targetPath || ''
+    });
+    
+    // Refresh the file list
+    displayFiles(user.uid);
+    closeMoveModal();
+    alert('File moved successfully!');
+  } catch (error) {
+    console.error("Error moving file:", error);
+    alert("Failed to move file. Please try again.");
+  }
+}
+
+// Open rename folder modal
+function openRenameFolderModal(folderId, currentName) {
+  const modal = document.getElementById('rename-folder-modal');
+  const form = document.getElementById('rename-folder-form');
+  const nameInput = document.getElementById('new-folder-name');
+
+  if (modal && form && nameInput) {
+    form.dataset.folderId = folderId;
+    nameInput.value = currentName;
+    modal.style.display = 'block';
+  }
+}
+
+// Close rename folder modal
+function closeRenameFolderModal() {
+  const modal = document.getElementById('rename-folder-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+// Rename folder function
+async function renameFolder(folderId, newName) {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  try {
+    const folderRef = doc(db, "folders", folderId);
+    await updateDoc(folderRef, {
+      name: newName,
+      updatedAt: serverTimestamp()
+    });
+    
+    // Refresh the view
+    displayFiles(user.uid);
+    closeRenameFolderModal();
+    alert('Folder renamed successfully!');
+  } catch (error) {
+    console.error("Error renaming folder:", error);
+    alert("Failed to rename folder. Please try again.");
   }
 }
 
@@ -495,41 +833,34 @@ async function deleteFile(docId, blobName) {
   }
 }
 
-function getSimplifiedType(fileType) {
-  if (!fileType) return 'default';
-  const type = fileType.toLowerCase();
-  if (type.includes('image')) return 'image';
-  if (type.includes('video')) return 'video';
-  if (type.includes('audio')) return 'audio';
-  if (type.includes('pdf')) return 'pdf';
-  if (type.includes('spreadsheet') || type.includes('excel')) return 'spreadsheet';
-  if (type.includes('presentation') || type.includes('powerpoint')) return 'presentation';
-  if (type.includes('zip') || type.includes('rar') || type.includes('tar') || type.includes('7z')) return 'archive';
-  if (type.includes('text') || type.includes('javascript') || type.includes('python') || type.includes('java') || type.includes('html') || type.includes('css')) return 'code';
-  return type.split('/')[0] || 'default';
-}
-
-function formatDate(date) {
-  if (!date) return 'Unknown date';
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-}
-
-function formatFileSize(size) {
-  if (!size) return 'Unknown size';
-  
-  if (typeof size === 'string' && /^[\d.]+ [KMG]?B$/.test(size)) {
-    return size;
+// Delete folder
+async function deleteFolder(folderId, userId) {
+  try {
+    // First delete all files in the folder
+    const folderRef = doc(db, "folders", folderId);
+    const folderDoc = await getDoc(folderRef);
+    
+    if (folderDoc.exists()) {
+      const folderData = folderDoc.data();
+      const filesQuery = query(
+        collection(db, "archiveItems"),
+        where("uploadedBy", "==", userId),
+        where("path", "==", folderData.fullPath)
+      );
+      
+      const filesSnapshot = await getDocs(filesQuery);
+      for (const fileDoc of filesSnapshot.docs) {
+        await deleteFile(fileDoc.id, fileDoc.data().path);
+      }
+      
+      // Then delete the folder itself
+      await deleteDoc(folderRef);
+      
+      // Refresh the view
+      displayFiles(userId);
+    }
+  } catch (error) {
+    console.error("Error deleting folder:", error);
+    alert("Failed to delete folder. Please try again.");
   }
-  
-  const bytes = typeof size === 'string' ? parseFloat(size) : size;
-  if (isNaN(bytes)) return 'Unknown size';
-  
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(1)} MB`;
-  return `${(bytes / 1073741824).toFixed(1)} GB`;
 }

@@ -372,3 +372,87 @@ body {
   color: #888;
   font-size: 0.85rem;
 }
+
+/* Move Modal Specific Styles */
+#move-modal .modal-content {
+  background: white;
+  padding: var(--padding);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  max-width: 500px;
+  width: 90%;
+}
+
+#move-modal .modal-content h2 {
+  font-size: 1.8rem;
+  margin-bottom: var(--margin);
+  color: var(--primary-color);
+}
+
+#move-modal .form-group {
+  margin-bottom: 15px;
+}
+
+#move-modal .form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+#move-modal #target-folder {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-family: var(--font-family);
+  font-size: 0.9rem;
+  background-color: white;
+}
+
+#move-modal #current-folder {
+  font-weight: bold;
+  color: var(--accent-color);
+}
+
+/* Add move button style to match your existing button styles */
+.file-actions .move-btn {
+  background: var(--warning-color);
+  color: white;
+}
+
+.file-actions .move-btn:hover {
+  background: #e69500;
+  transform: translateY(-2px);
+}
+
+/* Add to your existing button styles */
+.file-actions .rename-btn,
+.folder-actions .rename-btn {
+    background: #9C27B0;
+    color: white;
+}
+
+.file-actions .rename-btn:hover,
+.folder-actions .rename-btn:hover {
+    background: #7B1FA2;
+    transform: translateY(-2px);
+}
+
+/* Folder actions container */
+.folder-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.folder-actions button {
+    padding: 6px 14px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
