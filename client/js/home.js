@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const dashboardItem = document.querySelector('li:nth-child(2)');
                 if (dashboardItem) {
                     dashboardItem.addEventListener('click', () => {
-                        window.location.href = "dashboard.html";
+                        window.location.href = "admin-page.html";
                     });
                     dashboardItem.style.cursor = 'pointer';
                 }
