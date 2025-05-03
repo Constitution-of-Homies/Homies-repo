@@ -80,38 +80,53 @@
                 <section class="filter-row">
                     <section class="filter-group">
                         <label>Type</label>
-                        <select>
-                            <option>All</option>
-                            <option>Documents</option>
-                            <option>Notes</option>
-                            <option>Images</option>
+                        <select id="filter-type">
+                            <option value="">All types</option>
+                            <option value="image">Images</option>
+                            <option value="video">Videos</option>
+                            <option value="audio">Audio</option>
+                            <option value="document">Documents</option>
+                            <option value="spreadsheet">Spreadsheets</option>
+                            <option value="presentation">Presentations</option>
+                            <option value="archive">Archives</option>
+                            <option value="code">Code</option>
+                            <option value="pdf">PDFs</option>
                         </select>
                     </section>
                     <section class="filter-group">
-                        <label>Date</label>
-                        <select>
-                            <option>Any time</option>
-                            <option>Today</option>
-                            <option>This week</option>
-                            <option>This month</option>
+                        <label>Category</label>
+                        <select id="filter-category">
+                            <option value="">All categories</option>
+                            <option value="general">General</option>
+                            <option value="work">Work</option>
+                            <option value="personal">Personal</option>
+                            <option value="education">Education</option>
+                            <!-- Add more categories as needed -->
                         </select>
                     </section>
                 </section>
                 <section class="filter-row">
                     <section class="filter-group">
-                        <label>Author</label>
-                        <select>
-                            <option>All authors</option>
-                            <option>Me</option>
-                            <option>Collaborators</option>
+                        <label>Date</label>
+                        <select id="filter-date">
+                            <option value="">Any time</option>
+                            <option value="day">Today</option>
+                            <option value="week">This week</option>
+                            <option value="month">This month</option>
+                            <option value="year">This year</option>
                         </select>
                     </section>
                     <section class="filter-group">
                         <label>Tags</label>
-                        <input type="text" placeholder="Enter tags...">
+                        <input type="text" id="filter-tags" placeholder="Enter tags...">
                     </section>
                 </section>
             </section>
+        </section>
+
+        <section class="search-results-container" style="display: none;">
+            <h2>Search Results</h2>
+            <section id="search-results" class="search-results-grid"></section>
         </section>
     </main>
 

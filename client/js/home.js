@@ -1,7 +1,19 @@
-import { auth } from "./firebase.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
-import { db } from "./firebase.js";
+import { 
+    auth, 
+    db 
+} from "./firebase.js";
+import { 
+    onAuthStateChanged, 
+    signOut 
+} from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+import { 
+    doc, 
+    getDoc,
+    collection,
+    query,
+    where,
+    getDocs
+} from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
 // Profile dropdown functionality
 document.querySelector('.profile-item').addEventListener('mouseenter', function() {
@@ -42,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const dashboardItem = document.querySelector('li:nth-child(2)');
                 if (dashboardItem) {
                     dashboardItem.addEventListener('click', () => {
-                        window.location.href = "admin-page.html";
+                        window.location.href = "profile.html";
                     });
                     dashboardItem.style.cursor = 'pointer';
                 }
@@ -133,4 +145,162 @@ function updateUIForAuthState(isLoggedIn) {
             </li>
         `;
     }
+}
+
+// Search functionality
+document.querySelector('.search-button').addEventListener('click', performSearch);
+document.querySelector('.search-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        performSearch();
+    }
+});
+
+async function performSearch() {
+    const searchTerm = document.querySelector('.search-input').value.trim();
+    if (!searchTerm) return;
+    
+    const user = auth.currentUser;
+    // if (!user) {
+    //     alert('Please sign in to search');
+    //     return;
+    // }
+
+    try {
+        // Create a query for the user's files
+        const q = query(
+            collection(db, "archiveItems"),
+            where("uploadedBy", "==", user.uid)
+        );
+        
+        // Execute the query
+        const querySnapshot = await getDocs(q);
+        
+        // Filter results in memory
+        const results = [];
+        querySnapshot.forEach((doc) => {
+            const file = doc.data();
+            if (matchesSearchTerm(file, searchTerm)) {
+                results.push({ id: doc.id, ...file });
+            }
+        });
+        
+        displaySearchResults(results);
+    } catch (error) {
+        console.error("Search error:", error);
+        alert("Error performing search");
+    }
+}
+
+function matchesSearchTerm(file, searchTerm) {
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    
+    // Check title
+    if (file.metadata?.title?.toLowerCase().includes(lowerSearchTerm)) {
+        return true;
+    }
+    
+    // Check description
+    if (file.metadata?.description?.toLowerCase().includes(lowerSearchTerm)) {
+        return true;
+    }
+    
+    // Check tags
+    if (file.metadata?.tags?.some(tag => tag.toLowerCase().includes(lowerSearchTerm))) {
+        return true;
+    }
+    
+    // Check filename as fallback
+    if (file.name?.toLowerCase().includes(lowerSearchTerm)) {
+        return true;
+    }
+    
+    return false;
+}
+
+function displaySearchResults(results) {
+    const resultsContainer = document.getElementById('search-results');
+    const searchContainer = document.querySelector('.search-results-container');
+    
+    if (!results || results.length === 0) {
+        resultsContainer.innerHTML = '<p>No results found</p>';
+        searchContainer.style.display = 'block';
+        return;
+    }
+    
+    resultsContainer.innerHTML = '';
+    
+    results.forEach((file) => {
+        const fileType = getSimplifiedType(file.type);
+        const fileIcon = getFileIcon(fileType);
+        
+        const resultItem = document.createElement('div');
+        resultItem.className = 'search-result-item';
+        resultItem.innerHTML = `
+            <div class="search-result-icon">${fileIcon}</div>
+            <div class="search-result-details">
+                <h3>${file.metadata?.title || file.name || 'Untitled'}</h3>
+                <p class="search-result-description">${file.metadata?.description || 'No description'}</p>
+                <div class="search-result-meta">
+                    <span>${formatFileSize(file.size)}</span>
+                    <span>${formatDate(file.uploadedAt?.toDate())}</span>
+                </div>
+                <div class="search-result-actions">
+                    <a href="${file.url}" target="_blank" class="view-btn">View</a>
+                    <a href="${file.url}" download="${file.name}" class="download-btn">Download</a>
+                </div>
+            </div>
+        `;
+        resultsContainer.appendChild(resultItem);
+    });
+    
+    searchContainer.style.display = 'block';
+}
+
+// Helper functions (add these if not already present)
+function getSimplifiedType(fileType) {
+    if (!fileType) return 'default';
+    const type = fileType.toLowerCase();
+    if (type.includes('image')) return 'image';
+    if (type.includes('video')) return 'video';
+    if (type.includes('audio')) return 'audio';
+    if (type.includes('pdf')) return 'pdf';
+    if (type.includes('spreadsheet') || type.includes('excel')) return 'spreadsheet';
+    if (type.includes('presentation') || type.includes('powerpoint')) return 'presentation';
+    if (type.includes('zip') || type.includes('rar') || type.includes('tar') || type.includes('7z')) return 'archive';
+    if (type.includes('text') || type.includes('javascript') || type.includes('python') || type.includes('java') || type.includes('html') || type.includes('css')) return 'code';
+    return type.split('/')[0] || 'default';
+}
+
+function getFileIcon(type) {
+    const fileIcons = {
+        image: '🖼️',
+        video: '🎬',
+        audio: '🎵',
+        document: '📄',
+        spreadsheet: '📊',
+        presentation: '📑',
+        archive: '🗄️',
+        code: '💻',
+        pdf: '📕',
+        folder: '📁',
+        default: '📄'
+    };
+    return fileIcons[type] || fileIcons.default;
+}
+
+function formatFileSize(bytes) {
+    if (typeof bytes !== 'number') return 'Unknown size';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(1)} MB`;
+    return `${(bytes / 1073741824).toFixed(1)} GB`;
+}
+
+function formatDate(date) {
+    if (!date) return 'Unknown date';
+    return date.toLocaleDateString('en-GB', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
 }

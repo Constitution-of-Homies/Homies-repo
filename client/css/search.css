@@ -56,8 +56,8 @@
 }
 
 .filter-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   filter: invert(100%) sepia(0%) saturate(7500%) hue-rotate(329deg) brightness(104%) contrast(101%);
 }
 
@@ -113,4 +113,126 @@
 .filter-group input:focus {
   outline: none;
   border-color: var(--hover-color);
+}
+
+.search-results-container {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.search-results-container h2 {
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.search-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.search-result-item {
+  display: flex;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  transition: transform 0.2s;
+}
+
+.search-result-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.search-result-icon {
+  font-size: 2rem;
+  margin-right: 15px;
+  align-self: center;
+}
+
+.search-result-details {
+  flex: 1;
+}
+
+.search-result-details h3 {
+  margin: 0 0 5px 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.search-result-details p {
+  margin: 0 0 10px 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.search-result-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #888;
+  margin-bottom: 10px;
+}
+
+.search-result-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.search-result-actions a {
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.search-result-actions .view-btn {
+  background-color: #3498db;
+  color: white;
+}
+
+.search-result-actions .download-btn {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.search-result-actions a:hover {
+  opacity: 0.9;
+}
+
+.search-result-description {
+  margin: 0 0 10px 0;
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.search-result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.8rem;
+  color: #888;
+  margin-bottom: 10px;
+}
+
+.search-result-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.search-result-tags .tag {
+  background-color: #e0e0e0;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  color: #555;
 }
