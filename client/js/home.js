@@ -15,6 +15,16 @@ import {
     getDocs
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
+let currentSearchTerm = '';
+let currentFilters = {
+    type: '',
+    category: '',
+    date: '',
+    tags: ''
+};
+let currentPage = 1;
+const resultsPerPage = 2;
+
 // Profile dropdown functionality
 document.querySelector('.profile-item').addEventListener('mouseenter', function() {
     this.setAttribute('aria-expanded', 'true');
@@ -149,42 +159,52 @@ function updateUIForAuthState(isLoggedIn) {
 
 // Search functionality
 document.querySelector('.search-button').addEventListener('click', performSearch);
+document.querySelector('.filter-button').addEventListener('click', function() {
+    // If filters are visible and we have a search term, perform search
+    if (document.querySelector('.filter-section').classList.contains('active') && currentSearchTerm) {
+        performSearch();
+    }
+});
 document.querySelector('.search-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         performSearch();
     }
 });
 
+window.currentSearchResults = [];
+
 async function performSearch() {
+    currentPage = 1; // Reset to first page on new search
     const searchTerm = document.querySelector('.search-input').value.trim();
-    if (!searchTerm) return;
+    currentSearchTerm = searchTerm;
     
-    const user = auth.currentUser;
-    // if (!user) {
-    //     alert('Please sign in to search');
-    //     return;
-    // }
+    // Get current filter values
+    currentFilters = {
+        type: document.getElementById('filter-type').value,
+        category: document.getElementById('filter-category').value,
+        date: document.getElementById('filter-date').value,
+        tags: document.getElementById('filter-tags').value.toLowerCase()
+    };
 
     try {
-        // Create a query for the user's files
-        const q = query(
-            collection(db, "archiveItems"),
-            where("uploadedBy", "==", user.uid)
-        );
+        // Create a base query for ALL files (removed the user filter)
+        let q = query(collection(db, "archiveItems"));
         
         // Execute the query
         const querySnapshot = await getDocs(q);
         
         // Filter results in memory
-        const results = [];
+        const allResults = [];
         querySnapshot.forEach((doc) => {
             const file = doc.data();
-            if (matchesSearchTerm(file, searchTerm)) {
-                results.push({ id: doc.id, ...file });
+            if (matchesSearchTerm(file, searchTerm) && matchesFilters(file)) {
+                allResults.push({ id: doc.id, ...file });
             }
         });
         
-        displaySearchResults(results);
+        // Store all results and display first page
+        window.currentSearchResults = allResults;
+        displaySearchResults(allResults);
     } catch (error) {
         console.error("Search error:", error);
         alert("Error performing search");
@@ -217,19 +237,96 @@ function matchesSearchTerm(file, searchTerm) {
     return false;
 }
 
-function displaySearchResults(results) {
+function matchesFilters(file) {
+    // Type filter
+    if (currentFilters.type && getSimplifiedType(file.type) !== currentFilters.type) {
+        return false;
+    }
+    
+    // Category filter
+    if (currentFilters.category && file.metadata?.category !== currentFilters.category) {
+        return false;
+    }
+    
+    // Date filter
+    if (currentFilters.date && file.uploadedAt) {
+        const fileDate = file.uploadedAt.toDate();
+        const now = new Date();
+        
+        switch(currentFilters.date) {
+            case 'day':
+                if (!isSameDay(fileDate, now)) return false;
+                break;
+            case 'week':
+                if (!isSameWeek(fileDate, now)) return false;
+                break;
+            case 'month':
+                if (!isSameMonth(fileDate, now)) return false;
+                break;
+            case 'year':
+                if (fileDate.getFullYear() !== now.getFullYear()) return false;
+                break;
+        }
+    }
+    
+    // Tags filter
+    if (currentFilters.tags) {
+        const tagTerms = currentFilters.tags.split(',').map(t => t.trim());
+        if (!file.metadata?.tags || 
+            !tagTerms.every(tag => 
+                file.metadata.tags.some(fileTag => 
+                    fileTag.toLowerCase().includes(tag)
+                )
+            )
+        ) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Add these date helper functions
+function isSameDay(date1, date2) {
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getDate() === date2.getDate();
+}
+
+function isSameWeek(date1, date2) {
+    const oneDay = 24 * 60 * 60 * 1000;
+    const diffDays = Math.round(Math.abs((date1 - date2) / oneDay));
+    return diffDays <= 7 && date1.getDay() <= date2.getDay();
+}
+
+function isSameMonth(date1, date2) {
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth();
+}
+
+function displaySearchResults(allResults) {
     const resultsContainer = document.getElementById('search-results');
     const searchContainer = document.querySelector('.search-results-container');
+    const clearBtn = document.querySelector('.clear-search-btn');
+    const paginationContainer = document.querySelector('.pagination-container');
     
-    if (!results || results.length === 0) {
+    if (!allResults || allResults.length === 0) {
         resultsContainer.innerHTML = '<p>No results found</p>';
         searchContainer.style.display = 'block';
+        if (paginationContainer) paginationContainer.style.display = 'none';
         return;
     }
     
+    // Calculate pagination
+    const totalPages = Math.ceil(allResults.length / resultsPerPage);
+    const startIndex = (currentPage - 1) * resultsPerPage;
+    const endIndex = Math.min(startIndex + resultsPerPage, allResults.length);
+    const pageResults = allResults.slice(startIndex, endIndex);
+    
+    // Display results
     resultsContainer.innerHTML = '';
     
-    results.forEach((file) => {
+    pageResults.forEach((file) => {
         const fileType = getSimplifiedType(file.type);
         const fileIcon = getFileIcon(fileType);
         
@@ -239,6 +336,7 @@ function displaySearchResults(results) {
             <div class="search-result-icon">${fileIcon}</div>
             <div class="search-result-details">
                 <h3>${file.metadata?.title || file.name || 'Untitled'}</h3>
+                ${file.uploadedBy ? `<p class="search-result-uploader">Uploaded by: ${file.uploadedByName || 'Anonymous'}</p>` : ''}
                 <p class="search-result-description">${file.metadata?.description || 'No description'}</p>
                 <div class="search-result-meta">
                     <span>${formatFileSize(file.size)}</span>
@@ -253,7 +351,127 @@ function displaySearchResults(results) {
         resultsContainer.appendChild(resultItem);
     });
     
+    // Create or update pagination controls
+    if (!paginationContainer) {
+        const newPaginationContainer = document.createElement('div');
+        newPaginationContainer.className = 'pagination-container';
+        searchContainer.appendChild(newPaginationContainer);
+        updatePaginationControls(newPaginationContainer, allResults.length, totalPages);
+    } else {
+        paginationContainer.style.display = 'flex';
+        updatePaginationControls(paginationContainer, allResults.length, totalPages);
+    }
+    
     searchContainer.style.display = 'block';
+    
+    // Add event listener for clear button
+    clearBtn.addEventListener('click', clearSearchResults);
+}
+
+function updatePaginationControls(container, totalResults, totalPages) {
+    container.innerHTML = `
+        <div class="pagination-info">
+            Showing ${((currentPage - 1) * resultsPerPage) + 1}-${Math.min(currentPage * resultsPerPage, totalResults)} of ${totalResults} results
+        </div>
+        <div class="pagination-buttons">
+            <button class="pagination-btn ${currentPage === 1 ? 'disabled' : ''}" id="prev-page">
+                Previous
+            </button>
+            <div class="page-numbers">
+                ${generatePageNumbers(totalPages)}
+            </div>
+            <button class="pagination-btn ${currentPage === totalPages ? 'disabled' : ''}" id="next-page">
+                Next
+            </button>
+        </div>
+    `;
+    
+    // Add event listeners
+    document.getElementById('prev-page')?.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            displaySearchResults(window.currentSearchResults);
+        }
+    });
+    
+    document.getElementById('next-page')?.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            displaySearchResults(window.currentSearchResults);
+        }
+    });
+    
+    // Add event listeners for page numbers
+    document.querySelectorAll('.page-number').forEach(button => {
+        button.addEventListener('click', (e) => {
+            currentPage = parseInt(e.target.textContent);
+            displaySearchResults(window.currentSearchResults);
+        });
+    });
+}
+
+function generatePageNumbers(totalPages) {
+    let pagesHtml = '';
+    const maxVisiblePages = 5; // Show up to 5 page numbers
+    
+    if (totalPages <= maxVisiblePages) {
+        // Show all pages
+        for (let i = 1; i <= totalPages; i++) {
+            pagesHtml += `<button class="page-number ${i === currentPage ? 'active' : ''}">${i}</button>`;
+        }
+    } else {
+        // Show limited pages with ellipsis
+        if (currentPage <= 3) {
+            // Show first 3 pages, ellipsis, last page
+            for (let i = 1; i <= 3; i++) {
+                pagesHtml += `<button class="page-number ${i === currentPage ? 'active' : ''}">${i}</button>`;
+            }
+            pagesHtml += `<span class="ellipsis">...</span>`;
+            pagesHtml += `<button class="page-number">${totalPages}</button>`;
+        } else if (currentPage >= totalPages - 2) {
+            // Show first page, ellipsis, last 3 pages
+            pagesHtml += `<button class="page-number">1</button>`;
+            pagesHtml += `<span class="ellipsis">...</span>`;
+            for (let i = totalPages - 2; i <= totalPages; i++) {
+                pagesHtml += `<button class="page-number ${i === currentPage ? 'active' : ''}">${i}</button>`;
+            }
+        } else {
+            // Show first page, ellipsis, current page ±1, ellipsis, last page
+            pagesHtml += `<button class="page-number">1</button>`;
+            pagesHtml += `<span class="ellipsis">...</span>`;
+            for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                pagesHtml += `<button class="page-number ${i === currentPage ? 'active' : ''}">${i}</button>`;
+            }
+            pagesHtml += `<span class="ellipsis">...</span>`;
+            pagesHtml += `<button class="page-number">${totalPages}</button>`;
+        }
+    }
+    
+    return pagesHtml;
+}
+
+function clearSearchResults() {
+    document.querySelector('.search-input').value = '';
+    document.getElementById('filter-type').value = '';
+    document.getElementById('filter-category').value = '';
+    document.getElementById('filter-date').value = '';
+    document.getElementById('filter-tags').value = '';
+    
+    document.querySelector('.search-results-container').style.display = 'none';
+    document.getElementById('search-results').innerHTML = '';
+    
+    const paginationContainer = document.querySelector('.pagination-container');
+    if (paginationContainer) paginationContainer.style.display = 'none';
+    
+    currentSearchTerm = '';
+    currentPage = 1;
+    currentFilters = {
+        type: '',
+        category: '',
+        date: '',
+        tags: ''
+    };
+    window.currentSearchResults = [];
 }
 
 // Helper functions (add these if not already present)
