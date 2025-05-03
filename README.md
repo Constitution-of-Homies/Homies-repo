@@ -18,12 +18,4 @@ npm install
 
 ## Run Locally
 
-- In one terminal run:
-```bash
-node api/index
-```
-
-- In another terminal run:
-```bash
-swa start --app-location ./client --api-location http://localhost:3000
-```
+Install the live server extension and in the bottom right click on the go live button.
