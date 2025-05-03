@@ -26,30 +26,53 @@ let currentPage = 1;
 const resultsPerPage = 2;
 
 // Profile dropdown functionality
-document.querySelector('.profile-item').addEventListener('mouseenter', function() {
-    this.setAttribute('aria-expanded', 'true');
-});
-document.querySelector('.profile-item').addEventListener('mouseleave', function() {
-    this.setAttribute('aria-expanded', 'false');
-});
+const profileItem = document.querySelector('.profile-item');
+if (profileItem) {
+    profileItem.addEventListener('mouseenter', function() {
+        this.setAttribute('aria-expanded', 'true');
+    });
+    profileItem.addEventListener('mouseleave', function() {
+        this.setAttribute('aria-expanded', 'false');
+    });
+}
 
 // Filter section toggle
-document.addEventListener('DOMContentLoaded', function() {
-    const filterButton = document.querySelector('.filter-button');
-    const filterSection = document.querySelector('.filter-section');
-    
+const filterButton = document.querySelector('.filter-button');
+const filterSection = document.querySelector('.filter-section');
+if (filterButton && filterSection) {
     filterButton.addEventListener('click', function() {
         filterSection.classList.toggle('active');
         
         const searchContainer = document.querySelector('.search-container');
-        if (filterSection.classList.contains('active')) {
-            searchContainer.style.borderRadius = '4px 4px 0 0';
-        } else {
-            searchContainer.style.borderRadius = '4px';
+        if (searchContainer) {
+            if (filterSection.classList.contains('active')) {
+                searchContainer.style.borderRadius = '4px 4px 0 0';
+            } else {
+                searchContainer.style.borderRadius = '4px';
+            }
+        }
+        
+        // If filters are visible and we have a search term, perform search
+        if (filterSection.classList.contains('active') && currentSearchTerm) {
+            performSearch();
         }
     });
+}
 
-    // Check auth state
+// Search functionality
+const searchButton = document.querySelector('.search-button');
+const searchInput = document.querySelector('.search-input');
+if (searchButton && searchInput) {
+    searchButton.addEventListener('click', performSearch);
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+}
+
+// Check auth state
+document.addEventListener('DOMContentLoaded', function() {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             try {
@@ -90,14 +113,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function updateProfileSection(user, userData = null) {
     const profileItem = document.querySelector('.profile-item');
-    const profileIcon = profileItem.querySelector('.nav-icon');
+    if (!profileItem) return;
+
+    const profileIcon = profileItem.querySelector('img');
     const profileText = profileItem.querySelector('.nav-text');
     
+    if (!profileIcon || !profileText) {
+        console.error('Profile icon or text not found');
+        return;
+    }
+
     // Update profile text with username
-    profileText.textContent = userData?.username || user.displayName || "Profile";
+    profileText.textContent = userData?.username || user?.displayName || "Profile";
     
     // Update profile picture if available
-    if (userData?.photoURL || user.photoURL) {
+    if (userData?.photoURL || user?.photoURL) {
         profileIcon.src = userData?.photoURL || user.photoURL;
         profileIcon.style.borderRadius = '50%'; // Make it circular
         profileIcon.classList.add('user-avatar'); // Add class for custom styling
@@ -111,11 +141,15 @@ function updateProfileSection(user, userData = null) {
     }
     
     // Update dropdown menu for logged in user
-    updateUIForAuthState(true);
+    updateUIForAuthState(!!user);
 }
 
 function updateUIForAuthState(isLoggedIn) {
     const profileOptions = document.querySelector('.profile-options');
+    if (!profileOptions) {
+        console.error('Profile options not found');
+        return;
+    }
     
     if (isLoggedIn) {
         // Update profile options for logged in user
@@ -129,15 +163,18 @@ function updateUIForAuthState(isLoggedIn) {
         `;
         
         // Add logout functionality
-        document.getElementById('logout-btn')?.addEventListener('click', async (e) => {
-            e.preventDefault();
-            try {
-                await signOut(auth);
-                window.location.reload();
-            } catch (error) {
-                console.error("Logout error:", error);
-            }
-        });
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                try {
+                    await signOut(auth);
+                    window.location.reload();
+                } catch (error) {
+                    console.error("Logout error:", error);
+                }
+            });
+        }
     } else {
         // Keep or restore the original login/signup options
         profileOptions.innerHTML = `
@@ -157,37 +194,26 @@ function updateUIForAuthState(isLoggedIn) {
     }
 }
 
-// Search functionality
-document.querySelector('.search-button').addEventListener('click', performSearch);
-document.querySelector('.filter-button').addEventListener('click', function() {
-    // If filters are visible and we have a search term, perform search
-    if (document.querySelector('.filter-section').classList.contains('active') && currentSearchTerm) {
-        performSearch();
-    }
-});
-document.querySelector('.search-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        performSearch();
-    }
-});
-
 window.currentSearchResults = [];
 
 async function performSearch() {
     currentPage = 1; // Reset to first page on new search
-    const searchTerm = document.querySelector('.search-input').value.trim();
+    const searchInput = document.querySelector('.search-input');
+    if (!searchInput) return;
+    
+    const searchTerm = searchInput.value.trim();
     currentSearchTerm = searchTerm;
     
     // Get current filter values
     currentFilters = {
-        type: document.getElementById('filter-type').value,
-        category: document.getElementById('filter-category').value,
-        date: document.getElementById('filter-date').value,
-        tags: document.getElementById('filter-tags').value.toLowerCase()
+        type: document.getElementById('filter-type')?.value || '',
+        category: document.getElementById('filter-category')?.value || '',
+        date: document.getElementById('filter-date')?.value || '',
+        tags: document.getElementById('filter-tags')?.value.toLowerCase() || ''
     };
 
     try {
-        // Create a base query for ALL files (removed the user filter)
+        // Create a base query for ALL files
         let q = query(collection(db, "archiveItems"));
         
         // Execute the query
@@ -212,6 +238,7 @@ async function performSearch() {
 }
 
 function matchesSearchTerm(file, searchTerm) {
+    if (!searchTerm) return true;
     const lowerSearchTerm = searchTerm.toLowerCase();
     
     // Check title
@@ -310,6 +337,11 @@ function displaySearchResults(allResults) {
     const clearBtn = document.querySelector('.clear-search-btn');
     const paginationContainer = document.querySelector('.pagination-container');
     
+    if (!resultsContainer || !searchContainer) {
+        console.error('Search results container not found');
+        return;
+    }
+    
     if (!allResults || allResults.length === 0) {
         resultsContainer.innerHTML = '<p>No results found</p>';
         searchContainer.style.display = 'block';
@@ -365,7 +397,9 @@ function displaySearchResults(allResults) {
     searchContainer.style.display = 'block';
     
     // Add event listener for clear button
-    clearBtn.addEventListener('click', clearSearchResults);
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearSearchResults);
+    }
 }
 
 function updatePaginationControls(container, totalResults, totalPages) {
@@ -387,19 +421,25 @@ function updatePaginationControls(container, totalResults, totalPages) {
     `;
     
     // Add event listeners
-    document.getElementById('prev-page')?.addEventListener('click', () => {
-        if (currentPage > 1) {
-            currentPage--;
-            displaySearchResults(window.currentSearchResults);
-        }
-    });
+    const prevPage = document.getElementById('prev-page');
+    const nextPage = document.getElementById('next-page');
+    if (prevPage) {
+        prevPage.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                displaySearchResults(window.currentSearchResults);
+            }
+        });
+    }
     
-    document.getElementById('next-page')?.addEventListener('click', () => {
-        if (currentPage < totalPages) {
-            currentPage++;
-            displaySearchResults(window.currentSearchResults);
-        }
-    });
+    if (nextPage) {
+        nextPage.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                displaySearchResults(window.currentSearchResults);
+            }
+        });
+    }
     
     // Add event listeners for page numbers
     document.querySelectorAll('.page-number').forEach(button => {
@@ -451,16 +491,22 @@ function generatePageNumbers(totalPages) {
 }
 
 function clearSearchResults() {
-    document.querySelector('.search-input').value = '';
-    document.getElementById('filter-type').value = '';
-    document.getElementById('filter-category').value = '';
-    document.getElementById('filter-date').value = '';
-    document.getElementById('filter-tags').value = '';
+    const searchInput = document.querySelector('.search-input');
+    if (searchInput) searchInput.value = '';
+    const filterType = document.getElementById('filter-type');
+    const filterCategory = document.getElementById('filter-category');
+    const filterDate = document.getElementById('filter-date');
+    const filterTags = document.getElementById('filter-tags');
+    if (filterType) filterType.value = '';
+    if (filterCategory) filterCategory.value = '';
+    if (filterDate) filterDate.value = '';
+    if (filterTags) filterTags.value = '';
     
-    document.querySelector('.search-results-container').style.display = 'none';
-    document.getElementById('search-results').innerHTML = '';
-    
+    const searchContainer = document.querySelector('.search-results-container');
+    const searchResults = document.getElementById('search-results');
     const paginationContainer = document.querySelector('.pagination-container');
+    if (searchContainer) searchContainer.style.display = 'none';
+    if (searchResults) searchResults.innerHTML = '';
     if (paginationContainer) paginationContainer.style.display = 'none';
     
     currentSearchTerm = '';
@@ -474,7 +520,7 @@ function clearSearchResults() {
     window.currentSearchResults = [];
 }
 
-// Helper functions (add these if not already present)
+// Helper functions
 function getSimplifiedType(fileType) {
     if (!fileType) return 'default';
     const type = fileType.toLowerCase();
@@ -522,3 +568,6 @@ function formatDate(date) {
         day: 'numeric'
     });
 }
+
+// Export helpers for testing
+export { formatFileSize, formatDate, getSimplifiedType, getFileIcon };
