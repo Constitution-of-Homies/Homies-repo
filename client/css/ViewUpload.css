@@ -22,9 +22,7 @@
 /* Base Styles */
 body {
   font-family: var(--font-family);
-  background: url('https://png.pngtree.com/background/20230427/original/pngtree-all-the-old-books-on-the-shelves-in-a-library-picture-image_2496728.jpg') center/cover no-repeat fixed;
-  background-blend-mode: multiply; 
-  background-color: #3A2D1E; 
+  background: linear-gradient(135deg, var(--secondary-color) 0%, #e9e9e9 100%);
   color: #333;
   line-height: 1.6;
   margin: 0;
@@ -90,7 +88,7 @@ h1::after {
   padding: 0.6rem 1.2rem;
   border: none;
   border-radius: var(--border-radius);
-  background:#cca43b;
+  background: var(--accent-color);
   color: white;
   font-family: var(--font-family);
   font-size: 0.9rem;
@@ -156,7 +154,7 @@ h1::after {
 }
 
 .file-card, .folder-card {
-  background: #cca43b;
+  background: white;
   border-radius: var(--border-radius);
   box-shadow: var(--shadow);
   padding: 1.25rem;
@@ -276,21 +274,22 @@ h1::after {
   color: white;
 }
 
+/* Modals */
 .modal {
   display: none;
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 40%; 
-  max-height: 35vh; 
-  background: white; 
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
   z-index: 1000;
+  align-items: center;
+  justify-content: center;
   padding: 1rem;
-  overflow-y: auto; 
-  border-radius: 8px; 
-
+  box-sizing: border-box;
 }
+
 .modal-content {
   background: white;
   padding: 1.5rem;
@@ -401,37 +400,4 @@ h1::after {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-#target-folder {
-  width: 100%;
-  padding: 8px;
-  margin: 8px 0;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-#target-folder option {
-  padding: 8px;
-}
-
-.files-heading {
-  display: flex;          
-  align-items: center;    
-  gap: 20px;               
-  font-size: 2.5rem;      
-  margin: 0;              
-}
-
-.back-button {
-  font-size: 1rem;         
-  padding: 5px 10px;      
-  background: none;        
-  border: none;           
-  cursor: pointer;
-}
-
-.title-text {
-  flex-grow: 1;            
-  text-align: center;      
 }
