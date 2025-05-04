@@ -49,7 +49,7 @@ document.getElementById("signup-btn").addEventListener("click", async (e) => {
 
       console.log("User signed up and profile created:", user.uid);
       alert("Signup successful!");
-      window.location.href = "./admin-page.html";
+      window.location.href = "./index.html";
   } catch (error) {
       console.error("Error:", error.code, error.message);
       let errorMessage = "Signup failed. ";
@@ -94,7 +94,7 @@ document.getElementById("google-login-btn").addEventListener("click", async (e) 
       }, { merge: true });
       
       console.log("Google login successful:", user.uid);
-      window.location.href = "admin-page.html";
+      window.location.href = "index.html";
   } catch (error) {
       console.error("Error:", error.code, error.message);
       

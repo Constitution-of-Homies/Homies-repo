@@ -7,12 +7,6 @@ import {
   updateDoc,
   arrayUnion
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
-// import {
-//   BlobServiceClient,
-//   StorageSharedKeyCredential,
-//   generateBlobSASQueryParameters,
-//   BlobSASPermissions
-// } from 'https://cdn.jsdelivr.net/npm/@azure/storage-blob@12.14.0/dist/azure-storage-blob.min.js';
 import { auth, db } from "./firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
 import { formatFileSize, detectFileType, getFileIcon } from './utils.mjs';
@@ -100,7 +94,8 @@ function handleDrop(e) {
   handleFileSelection();
 }
 
-function handleFileSelection() {
+export function handleFileSelection() {
+  console.log('handleFileSelection: files=', fileInput.files);
   if (fileInput.files.length > 0) {
     const prompt = dropZone.querySelector('.drop-zone__prompt');
     if (prompt) {
@@ -186,7 +181,7 @@ function showMetadataModal(index) {
     <sect class="modal-content">
       <sect class="modal-header">
         <h3 class="modal-title">Edit Metadata: ${fileData.metadata.name}</h3>
-        <button class="close-btn">&times;</button>
+        <button class="close-btn">×</button>
       </sect>
       <form class="metadata-form">
         <sect class="form-group">
@@ -263,6 +258,7 @@ function clearSelection() {
 }
 
 async function uploadFiles() {
+  console.log('uploadFiles: filesToUpload=', filesToUpload, 'currentUser=', currentUser);
   if (filesToUpload.length === 0) {
     alert('Please select at least one file.');
     return;
@@ -296,6 +292,7 @@ async function uploadFiles() {
       } catch (error) {
         console.error(`Error uploading ${file.name}:`, error);
         addFileToList(file.name, null, false, error.message);
+        throw error; // Rethrow to trigger outer catch
       }
     }
 
@@ -309,7 +306,7 @@ async function uploadFiles() {
   }
 }
 
-async function addToFirestoreCollections(fileData, fileUrl, user) {
+export async function addToFirestoreCollections(fileData, fileUrl, user) {
   const timestamp = serverTimestamp();
   const fileType = fileData.metadata.type;
   const metadata = fileData.metadata.customMetadata;
@@ -324,6 +321,7 @@ async function addToFirestoreCollections(fileData, fileUrl, user) {
     lastModified: fileData.metadata.lastModified,
     uploadedBy: user.uid,
     uploadedAt: timestamp,
+    path: "/",
     metadata: {
       title: metadata.title,
       description: metadata.description,
@@ -359,7 +357,7 @@ async function addToFirestoreCollections(fileData, fileUrl, user) {
       uploadedAt: new Date().toISOString(), // Use client timestamp instead
       url: fileUrl
     }),
-    lastUpload: serverTimestamp() // This is fine as it's a direct update
+    lastUpload: serverTimestamp()
   });
 
   // Add to archiveCollection with proper path structure
@@ -425,45 +423,6 @@ function addFileToList(fileName, url, success, errorMsg) {
 
   fileList.appendChild(item);
 }
-
-// async function getSasUrl(blobName) {
-//   try {
-//     // TEMPORARY DEMO CREDENTIALS - REPLACE WITH YOUR OWN
-// const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
-//       const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
-//       const containerName = process.env.AZURE_CONTAINER_NAME;
-
-//     if (!accountName || !accountKey || !containerName) {
-//       throw new Error('Missing Azure Storage credentials');
-//     }
-
-//     const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
-    
-//     // Generate SAS token
-//     const expiresOn = new Date(new Date().valueOf() + 60 * 60 * 1000); // 1 hour expiration
-//     const sasToken = generateBlobSASQueryParameters({
-//       containerName,
-//       blobName,
-//       permissions: BlobSASPermissions.parse("cw"), // Create + Write permissions
-//       expiresOn
-//     }, sharedKeyCredential).toString();
-
-//     const blobServiceClient = new BlobServiceClient(
-//       `https://${accountName}.blob.core.windows.net`,
-//       sharedKeyCredential
-//     );
-    
-//     const containerClient = blobServiceClient.getContainerClient(containerName);
-//     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-
-//     const sasUrl = `${blockBlobClient.url}?${sasToken}`;
-//     console.log('Generated SAS URL:', sasUrl);
-//     return sasUrl;
-//   } catch (error) {
-//     console.error('Error generating SAS URL:', error);
-//     throw error;
-//   }
-// }
 
 async function getSasUrl(blobName) {
   try {

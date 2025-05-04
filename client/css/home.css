@@ -1,0 +1,223 @@
+:root {
+    --primary-color: #606060;
+    --secondary-color: #d9d9d9;
+    --accent-color: #8c8c8c;
+    --hover-color: #737373;
+    --text-color: #f0f0f0;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--secondary-color);
+}
+
+nav {
+    width: 60px;
+    height: 100vh;
+    background-color: var(--primary-color);
+    color: var(--text-color);
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+nav:hover {
+    width: 220px;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    padding: 0.5rem 1rem;
+    width: 100%;
+}
+
+.logo {
+    padding: 15px;
+    border-bottom: 1px solid var(--accent-color);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    white-space: nowrap;
+    height: 60px; /* Matches nav width */
+}
+
+.logo-img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.logo-text {
+    font-family: 'Courier New', monospace;
+    font-weight: 400;
+    font-size: 1.2rem;
+    opacity: 0;
+    transition: opacity 0.2s ease 0.1s;
+}
+
+nav:hover .logo-text {
+    opacity: 1;
+}
+
+ul {
+    list-style-type: none;
+    flex-grow: 1;
+}
+
+li {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+    position: relative;
+}
+
+li:hover {
+    background-color: var(--hover-color);
+}
+
+li i {
+    font-size: 20px;
+    width: 20px;
+    text-align: center;
+    position: absolute;
+    left: 20px;
+    transition: none;
+}
+
+.nav-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    position: absolute;
+    left: 20px;
+    filter: invert(100%) sepia(0%) saturate(7500%) hue-rotate(329deg) brightness(104%) contrast(101%);
+}
+
+.user-avatar {
+    width: 24px;
+    height: 24px;
+    object-fit: cover;
+    position: absolute;
+    left: 18px;
+    /* No filter applied */
+    border: 2px solid var(--text-color);
+}
+
+.nav-text {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    opacity: 0;
+    transition: opacity 0.2s ease 0.1s;
+    margin-left: 35px;
+}
+
+nav:hover .nav-text {
+    opacity: 1;
+}
+
+.profile-section {
+    border-top: 1px solid var(--accent-color);
+    margin-top: auto; /* Push to bottom */
+    position: relative;
+}
+
+.profile-item {
+    position: relative;
+    padding: 15px 20px;
+}
+
+.profile-options {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    width: 100%;
+    background-color: var(--primary-color);
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    z-index: 10;
+    overflow: hidden;
+}
+
+.profile-item:hover .profile-options {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.profile-options li {
+    padding: 12px 20px;
+    transition: background-color 0.2s;
+}
+
+.profile-options li:hover {
+    background-color: var(--hover-color);
+}
+
+/* Add a small arrow indicator */
+.profile-item::after {
+    content: '';
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid var(--text-color);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+nav:hover .profile-item::after {
+    opacity: 0.7;
+}
+
+.profile-item:hover::after {
+    opacity: 1;
+}
+
+main {
+    flex: 1;
+    padding: 30px;
+    color: var(--primary-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-y: auto; 
+    max-height: 100vh; 
+}
+
+.centered-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 800px;
+    text-align: center;
+}
+
+.main-logo {
+    max-width: 500px;
+    width: 100%;
+}

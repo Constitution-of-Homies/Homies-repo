@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Scriptorium</title>
+    <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="css/settings.css"/>
+</head>
+<body>
+    <header>
+        <h1>Scriptorium<img src="images/scriptorium.png" width="50" height="18"></h1>
+        <button id="back-btn">
+            <img src="images/icons/back-btn.png" width="18" height="18"> Back
+        </button>
+    </header>
+    <main class="settings-page">
+        <h2>Settings</h2>
+        
+        <section class="account-settings">
+            <h3>Account Settings</h3>
+            <button id="update-profile-btn">Update Profile</button>
+            <button id="change-password-btn">Change Password</button>
+            
+        </section>
+        
+        <section class="privacy-settings">
+            <h3>Privacy and Security</h3>
+            <button id="manage-permissions-btn">Manage Permissions</button>
+            <button id="two-fa-btn">Enable Two-Factor Authentication</button>
+        </section>
+        
+        <section class="notifications">
+            <h3>Notifications</h3>
+            <p>Enable notifications for uploads, downloads, and comments</p>
+            <label class="toggle-switch">
+                <input type="checkbox" id="email-notify-toggle">
+                <section class="slider"></section>
+            </label>
+        </section>
+
+        <section class="app-preferences">
+            <h3>App Preferences</h3>
+            <button id="change-theme-btn">Change Theme</button>
+            <button id="set-lang-btn">Set Language</button>
+        </section>
+
+        <section class="storage-data">
+            <h3>Storage and Data</h3>
+            <p>Display how much storage you have used and left</p>
+            <button id="storage-use-btn">Storage Use</button>
+            <h4>Export Data</h4>
+            <button id="export-data-btn"><img src="images/icons/download.png" width="18" height="18">Get Data</button>
+        </section>
+        <button id="delete-acc-btn">Delete Account</button>
+    </main>
+    <footer>
+        <small>&copy; 2025 Scriptorium</small>
+    </footer>
+    <script src="js/settings.js"></script>
+</body>
+</html>

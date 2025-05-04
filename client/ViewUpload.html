@@ -12,9 +12,21 @@
 <body>
     <main>
         <h1>My Files</h1>
-        <button class="back-button" onclick="window.location.href='admin-page.html'">
+        <button class="back-button" onclick="window.location.href='profile.html'">
             ← Go Back
         </button>
+
+        <!-- Add directory navigation breadcrumbs -->
+        <nav id="directory-breadcrumbs" class="breadcrumbs">
+            <button class="breadcrumb home" data-path="">Home</button>
+        </nav>
+
+        <!-- Add new directory controls -->
+        <section class="directory-controls">
+            <button id="create-folder-btn" class="action-btn">Create Folder</button>
+            <button id="upload-file-btn" class="action-btn">Upload File</button>
+        </section>
+
         <section id="files-container"></section>
     </main>
 
@@ -44,6 +56,57 @@
             </form>
         </section>
     </section>
+
+    <!-- Folder Creation Modal -->
+    <section id="folder-modal" class="modal">
+        <section class="modal-content">
+            <h2>Create New Folder</h2>
+            <form id="folder-form">
+                <label for="folder-name">Folder Name</label>
+                <input type="text" id="folder-name" name="name" required>
+                <section class="modal-actions">
+                    <button type="button" id="cancel-folder">Cancel</button>
+                    <button type="submit">Create</button>
+                </section>
+            </form>
+        </section>
+    </section>
+
+    <!-- Move File Modal -->
+    <section id="move-modal" class="modal">
+        <section class="modal-content">
+            <h2>Move File</h2>
+            <form id="move-form">
+                <p>Current Location: <p id="current-folder"></p></p>
+                <section class="form-group">
+                    <label for="target-folder">Move to:</label>
+                    <select id="target-folder" required>
+                        <option value="">Loading folders...</option>
+                    </select>
+                </section>
+                <section class="modal-actions">
+                    <button type="button" id="cancel-move">Cancel</button>
+                    <button type="submit">Move File</button>
+                </section>
+            </form>
+        </section>
+    </section>
+
+
+    <!-- Rename Folder Modal -->
+<section id="rename-folder-modal" class="modal">
+    <section class="modal-content">
+        <h2>Rename Folder</h2>
+        <form id="rename-folder-form">
+            <label for="new-folder-name">New Folder Name</label>
+            <input type="text" id="new-folder-name" name="name" required>
+            <section class="modal-actions">
+                <button type="button" id="cancel-rename-folder">Cancel</button>
+                <button type="submit">Rename</button>
+            </section>
+        </form>
+    </section>
+</section>
 
     <script type="module" src="js/ViewUpload.js"></script>
 </body>
