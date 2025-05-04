@@ -15,7 +15,10 @@
 body {
     display: flex;
     min-height: 100vh;
-    background-color: var(--secondary-color);
+    background: url('https://png.pngtree.com/background/20230427/original/pngtree-all-the-old-books-on-the-shelves-in-a-library-picture-image_2496728.jpg') center/cover no-repeat fixed;
+    background-blend-mode: multiply; 
+    background-color: #3A2D1E; 
+      
 }
 
 nav {

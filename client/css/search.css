@@ -3,7 +3,7 @@
   position: relative;
   max-width: 600px;
   width: 100%;
-  margin: 40px auto;
+  margin: 40px auto 0; /* Adjusted margin-bottom to 0 */
   border: 1px solid var(--accent-color);
   border-radius: 4px;
   overflow: hidden;
@@ -30,6 +30,9 @@
   background-color: var(--primary-color);
   cursor: pointer;
   transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .search-button:hover {
@@ -49,6 +52,9 @@
   cursor: pointer;
   transition: background-color 0.2s;
   border-left: 1px solid var(--accent-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .filter-button:hover {
@@ -61,10 +67,9 @@
   filter: invert(100%) sepia(0%) saturate(7500%) hue-rotate(329deg) brightness(104%) contrast(101%);
 }
 
-/* Filter section */
 .filter-section {
   max-width: 600px;
-  margin: 0 auto 40px;
+  margin: 0 auto; 
   padding: 0;
   background-color: var(--secondary-color);
   border: 1px solid var(--accent-color);
@@ -115,13 +120,25 @@
   border-color: var(--hover-color);
 }
 
+/* Ensure proper display of search results below search */
+.centered-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
 .search-results-container {
-  max-width: 1200px;
+  width: 100%;
+  max-width: 600px; /* Match search container width */
   margin: 20px auto;
   padding: 20px;
   background-color: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  display: block; /* Ensure it's visible by default - use JS to hide/show */
 }
 
 .search-results-container h2 {
@@ -132,7 +149,7 @@
 
 .search-results-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Adjusted column width */
   gap: 20px;
 }
 

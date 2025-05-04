@@ -20,6 +20,12 @@ header {
   z-index: 100;
 }
 
+body {
+  background: url('https://png.pngtree.com/background/20230427/original/pngtree-all-the-old-books-on-the-shelves-in-a-library-picture-image_2496728.jpg') center/cover no-repeat fixed;
+  background-blend-mode: multiply; /* Darkens the image */
+  background-color: #3A2D1E; /* Backup dark brown */
+}
+
 header h1 {
   font-size: 2.5rem;
   font-weight: 500;

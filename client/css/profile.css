@@ -10,6 +10,10 @@ body {
   flex-direction: column;
   min-height: 100vh;
   background: #fafafa;
+  background: url('https://png.pngtree.com/background/20230427/original/pngtree-all-the-old-books-on-the-shelves-in-a-library-picture-image_2496728.jpg') center/cover no-repeat fixed;
+  background-blend-mode: multiply; 
+  background-color: #3A2D1E;
+  
 }
 
 .dashboard-layout {
@@ -31,7 +35,7 @@ body {
 .side-menu {
   max-width: 275px;
   width: 100%;
-  background-color: white;
+  background-color: #582f0e ;
   min-height: 100vh;
   padding: 40px 20px;
   border-right: 1px solid #e0e0e0;
@@ -62,7 +66,7 @@ body {
 }
 
 .side-menu nav ul li:hover {
-  background-color: #f5f5f5;
+  background-color: #582f0e;
 }
 
 .side-menu nav ul li h2 {
