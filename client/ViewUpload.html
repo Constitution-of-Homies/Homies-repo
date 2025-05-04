@@ -8,102 +8,25 @@
     <link rel="stylesheet" href="css/ViewUpload.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/back.css">
-    <link rel="stylesheet" href="css/theme.css">
-    <link rel="stylesheet" href="css/search.css">
 </head>
-
 <body>
-    <button id="theme-switch" class="theme-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px"><path d="M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q14 0 27.5 1t26.5 3q-41 29-65.5 75.5T444-660q0 90 63 153t153 63q55 0 101-24.5t75-65.5q2 13 3 26.5t1 27.5q0 150-105 255T480-120Z"/></svg>
-        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px"><path d="M480-280q-83 0-141.5-58.5T280-480q0-83 58.5-141.5T480-680q83 0 141.5 58.5T680-480q0 83-58.5 141.5T480-280ZM200-440H40v-80h160v80Zm720 0H760v-80h160v80ZM440-760v-160h80v160h-80Zm0 720v-160h80v160h-80ZM256-650l-101-97 57-59 96 100-52 56Zm492 496-97-101 53-55 101 97-57 59Zm-98-550 97-101 59 57-100 96-56-52ZM154-212l101-97 55 53-97 101-59-57Z"/></svg>
-    </button>
     <main>
-        <h1 class="files-heading">
-            <button class="back-button" onclick="window.location.href='profile.html'">← Dashboard</button>
-            <span class="title-text">Welcome to My Files</span>
-        </h1>
+        <h1>My Files</h1>
+        <button class="back-button" onclick="window.location.href='profile.html'">
+            ← Go Back
+        </button>
 
-        <!-- Search and filter section -->
-        <section class="centered-content">  
-            <section class="search-container">
-                <input type="text" placeholder="Which file are you looking for?" class="search-input">
-                <button class="search-button">
-                    <img src="./images/icons/search.png" alt="Search" class="search-icon">
-                </button>
-                <button class="filter-button">
-                    <img src="./images/icons/filter.png" alt="Filters" class="filter-icon">
-                </button>
-            </section>
-           
-            <section class="filter-section">
-                <section class="filter-row">
-                    <section class="filter-group">
-                        <label>Type</label>
-                        <select id="filter-type">
-                            <option value="">All types</option>
-                            <option value="image">Images</option>
-                            <option value="video">Videos</option>
-                            <option value="audio">Audio</option>
-                            <option value="document">Documents</option>
-                            <option value="spreadsheet">Spreadsheets</option>
-                            <option value="presentation">Presentations</option>
-                            <option value="archive">Archives</option>
-                            <option value="code">Code</option>
-                            <option value="pdf">PDFs</option>
-                        </select>
-                    </section>
-                    <section class="filter-group">
-                        <label>Category</label>
-                        <select id="filter-category">
-                            <option value="">All categories</option>
-                            <option value="general">General</option>
-                            <option value="work">Work</option>
-                            <option value="personal">Personal</option>
-                            <option value="education">Education</option>
-                        </select>
-                    </section>
-                </section>
-                <section class="filter-row">
-                    <section class="filter-group">
-                        <label>Date</label>
-                        <select id="filter-date">
-                            <option value="">Any time</option>
-                            <option value="day">Today</option>
-                            <option value="week">This week</option>
-                            <option value="month">This month</option>
-                            <option value="year">This year</option>
-                        </select>
-                    </section>
-                    <section class="filter-group">
-                        <label>Tags</label>
-                        <input type="text" id="filter-tags" placeholder="Enter tags...">
-                    </section>
-                </section>
-            </section>
-            
-            
-        </section>
-
-        <!-- Directory navigation and file management -->
+        <!-- Add directory navigation breadcrumbs -->
         <nav id="directory-breadcrumbs" class="breadcrumbs">
             <button class="breadcrumb home" data-path="">Home</button>
         </nav>
 
-        <button id="create-folder-btn" class="action-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 2h9a2 2 0 0 1 2 2z"></path>
-            </svg>
-            Create Folder
-        </button>
-          
-        <button id="upload-file-btn" class="action-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            Upload File
-        </button>
+        <!-- Add new directory controls -->
+        <section class="directory-controls">
+            <button id="create-folder-btn" class="action-btn">Create Folder</button>
+            <button id="upload-file-btn" class="action-btn">Upload File</button>
+        </section>
+
         <section id="files-container"></section>
     </main>
 
@@ -158,7 +81,7 @@
                 <section class="form-group">
                     <label for="target-folder">Move to:</label>
                     <select id="target-folder" required>
-                        <option value="" selected>Home (Root Folder)</option>
+                        <option value="">Loading folders...</option>
                     </select>
                 </section>
                 <section class="modal-actions">
@@ -169,22 +92,22 @@
         </section>
     </section>
 
+
     <!-- Rename Folder Modal -->
-    <section id="rename-folder-modal" class="modal">
-        <section class="modal-content">
-            <h2>Rename Folder</h2>
-            <form id="rename-folder-form">
-                <label for="new-folder-name">New Folder Name</label>
-                <input type="text" id="new-folder-name" name="name" required>
-                <section class="modal-actions">
-                    <button type="button" id="cancel-rename-folder">Cancel</button>
-                    <button type="submit">Rename</button>
-                </section>
-            </form>
-        </section>
+<section id="rename-folder-modal" class="modal">
+    <section class="modal-content">
+        <h2>Rename Folder</h2>
+        <form id="rename-folder-form">
+            <label for="new-folder-name">New Folder Name</label>
+            <input type="text" id="new-folder-name" name="name" required>
+            <section class="modal-actions">
+                <button type="button" id="cancel-rename-folder">Cancel</button>
+                <button type="submit">Rename</button>
+            </section>
+        </form>
     </section>
+</section>
 
     <script type="module" src="js/ViewUpload.js"></script>
-    <script src="js/theme.js"></script>
 </body>
 </html>
