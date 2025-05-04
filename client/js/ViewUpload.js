@@ -127,40 +127,52 @@ function setupEventListeners(userId) {
   // Event delegation for edit, delete, and folder navigation
   document.addEventListener('click', async (e) => {
     if (e.target.classList.contains('edit-btn')) {
-      const docId = e.target.dataset.docId;
-      const title = e.target.dataset.title || 'Untitled';
-      const description = e.target.dataset.description || '';
-      const tags = e.target.dataset.tags || '';
-      const category = e.target.dataset.category || 'general';
-      openEditModal(docId, title, description, tags, category);
+        const docId = e.target.dataset.docId;
+        const title = e.target.dataset.title || 'Untitled';
+        const description = e.target.dataset.description || '';
+        const tags = e.target.dataset.tags || '';
+        const category = e.target.dataset.category || 'general';
+        openEditModal(docId, title, description, tags, category);
     } else if (e.target.classList.contains('rename-folder-btn')) {
-      const folderId = e.target.dataset.folderId;
-      const currentName = e.target.dataset.currentName || '';
-      openRenameFolderModal(folderId, currentName);
+        const folderId = e.target.dataset.folderId;
+        const currentName = e.target.dataset.currentName || '';
+        openRenameFolderModal(folderId, currentName);
     } else if (e.target.classList.contains('delete-btn')) {
-      const docId = e.target.dataset.docId;
-      const blobName = e.target.dataset.blobName;
-      if (confirm('Are you sure you want to delete this file?')) {
-        deleteFile(docId, blobName);
-      }
-    } else if (e.target.classList.contains('breadcrumb')) {
-      const path = e.target.dataset.path || '';
-      navigateToDirectory(path);
-    } else if (e.target.classList.contains('move-btn')) {
-      const docId = e.target.dataset.docId;
-      const currentPath = e.target.dataset.currentPath || '';
-      openMoveModal(docId, currentPath);
-    } else if (e.target.closest('.folder-card')) {
-      const folderCard = e.target.closest('.folder-card');
-      const path = folderCard.dataset.path;
-      navigateToDirectory(path);
+        const docId = e.target.dataset.docId;
+        const blobUrl = e.target.dataset.blobName;
+        if (confirm('Are you sure you want to permanently delete this file?')) {
+            try {
+                await deleteFile(docId, blobUrl);
+            } catch (error) {
+                alert('Error deleting file: ' + error.message);
+            }
+        }
     } else if (e.target.classList.contains('delete-folder-btn')) {
-      const folderId = e.target.dataset.folderId;
-      if (confirm('Are you sure you want to delete this folder and all its contents?')) {
-        deleteFolder(folderId, userId);
-      }
+        e.stopPropagation(); // Prevent event from bubbling to folder-card
+        const folderId = e.target.dataset.folderId;
+        if (confirm('Are you sure you want to delete this folder and all its contents?')) {
+            try {
+                await deleteFolder(folderId, auth.currentUser.uid);
+            } catch (error) {
+                alert('Error deleting folder: ' + error.message);
+            }
+        }
+    } else if (e.target.classList.contains('breadcrumb')) {
+        const path = e.target.dataset.path || '';
+        navigateToDirectory(path);
+    } else if (e.target.classList.contains('move-btn')) {
+        const docId = e.target.dataset.docId;
+        const currentPath = e.target.dataset.currentPath || '';
+        openMoveModal(docId, currentPath);
+    } else if (e.target.closest('.folder-card')) {
+        const folderCard = e.target.closest('.folder-card');
+        // Only navigate if the click wasn't on a button inside the folder card
+        if (!e.target.closest('.folder-actions')) {
+            const path = folderCard.dataset.path;
+            navigateToDirectory(path);
+        }
     }
-  });
+});
 
   // Create folder button
   const createFolderBtn = document.getElementById('create-folder-btn');
@@ -303,7 +315,7 @@ async function displayFiles(userId) {
     const filesQuery = query(
       collection(db, "archiveItems"), 
       where("uploadedBy", "==", userId),
-      where("path", "==", currentPath)
+      where("path", "==", currentPath || "")
     );
     
     const filesSnapshot = await getDocs(filesQuery);
@@ -333,8 +345,7 @@ async function displayFiles(userId) {
             <button class="rename-folder-btn" 
               data-folder-id="${doc.id}"
               data-current-name="${folder.name}">Rename</button>
-            <button class="delete-folder-btn" 
-              data-folder-id="${doc.id}">Delete</button>
+            <button class="delete-folder-btn" data-folder-id="${doc.id}">Delete</button>
           </section>
         </section>
       `;
@@ -381,7 +392,7 @@ async function displayFiles(userId) {
               <button class="move-btn" 
                 data-doc-id="${doc.id}"
                 data-current-path="${file.path || ''}">Move</button>
-              <button class="delete-btn" data-doc-id="${doc.id}" data-blob-name="${file.path || ''}">Delete</button>
+              <button class="delete-btn" data-doc-id="${doc.id}" data-blob-name="${file.url}">Delete</button>
             </section>
           </section>
         `;
@@ -435,7 +446,7 @@ async function createFolder(folderName, userId) {
     
     await addDoc(collection(db, "folders"), {
       name: folderName,
-      path: currentPath,
+      path: currentPath || "",
       fullPath: fullPath,
       ownerId: userId,
       createdAt: serverTimestamp(),
@@ -631,12 +642,12 @@ function openMoveModal(docId, currentPath) {
     currentFolderDisplay.textContent = currentPath || 'Root';
     
     // Clear existing options
-    folderSelect.innerHTML = '';
+    folderSelect.innerHTML = '<option value="" selected> Home (Root Folder)</option>';
     
     // Add default option
     const defaultOption = document.createElement('option');
     defaultOption.value = '';
-    defaultOption.textContent = 'Root Folder';
+    defaultOption.textContent = '';
     folderSelect.appendChild(defaultOption);
     
     // Load available folders
@@ -648,6 +659,9 @@ function openMoveModal(docId, currentPath) {
 
 async function loadAvailableFolders(userId, selectElement) {
   try {
+    selectElement.innerHTML = '<option value="">Home (Root Folder)</option>';
+
+    // Then add other folders
     const foldersQuery = query(
       collection(db, "folders"),
       where("ownerId", "==", userId)
@@ -680,8 +694,11 @@ async function moveFile(docId, targetPath) {
 
   try {
     const docRef = doc(db, "archiveItems", docId);
+
+    // Explicitly handle root folder case (empty string or null)
+    const newPath = targetPath === "" ? "" : targetPath || "";
     await updateDoc(docRef, {
-      path: targetPath || ''
+      path: newPath || ''
     });
     
     // Refresh the file list
@@ -722,10 +739,66 @@ async function renameFolder(folderId, newName) {
 
   try {
     const folderRef = doc(db, "folders", folderId);
+    const folderDoc = await getDoc(folderRef);
+    
+    if (!folderDoc.exists()) {
+      throw new Error("Folder not found");
+    }
+
+    const folderData = folderDoc.data();
+    const oldName = folderData.name;
+    const oldPath = folderData.fullPath;
+    
+    // Calculate new full path
+    const newFullPath = folderData.path + newName + '/';
+    
+    // First update the folder itself
     await updateDoc(folderRef, {
       name: newName,
+      fullPath: newFullPath,
       updatedAt: serverTimestamp()
     });
+
+    // Then update all files in this folder
+    const filesQuery = query(
+      collection(db, "archiveItems"),
+      where("uploadedBy", "==", user.uid),
+      where("path", "==", oldPath)
+    );
+    
+    const filesSnapshot = await getDocs(filesQuery);
+    const fileUpdates = [];
+    filesSnapshot.forEach((doc) => {
+      fileUpdates.push(updateDoc(doc.ref, {
+        path: newFullPath
+      }));
+    });
+    await Promise.all(fileUpdates);
+
+    // Then update all subfolders in this folder
+    const foldersQuery = query(
+      collection(db, "folders"),
+      where("ownerId", "==", user.uid),
+      where("path", "==", oldPath)
+    );
+    
+    const foldersSnapshot = await getDocs(foldersQuery);
+    const folderUpdates = [];
+    foldersSnapshot.forEach((doc) => {
+      const subfolderData = doc.data();
+      const newSubfolderPath = newFullPath + subfolderData.name + '/';
+      folderUpdates.push(updateDoc(doc.ref, {
+        path: newFullPath,
+        fullPath: newSubfolderPath
+      }));
+    });
+    await Promise.all(folderUpdates);
+
+    // Update current path if we're inside the renamed folder
+    if (currentPath.startsWith(oldPath)) {
+      currentPath = currentPath.replace(oldPath, newFullPath);
+      currentPathArray = currentPath ? currentPath.split('/').filter(Boolean) : [];
+    }
     
     // Refresh the view
     displayFiles(user.uid);
@@ -777,44 +850,66 @@ async function deleteFile(docId, blobName) {
   if (!user) return;
 
   try {
-    // Delete from Azure Blob Storage
-    if (blobName) {
-      const response = await fetch('/api/delete-blob', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ blobName })
-      });
-      if (!response.ok) {
-        throw new Error(`Failed to delete blob: ${response.statusText}`);
+    // First get the file document to ensure we have all needed data
+    const docRef = doc(db, "archiveItems", docId);
+    const docSnapshot = await getDoc(docRef);
+    
+    if (!docSnapshot.exists()) {
+      throw new Error("File not found");
+    }
+    
+    const fileData = docSnapshot.data();
+    
+    // Delete from Azure Blob Storage if URL exists
+    if (fileData.url) {
+      try {
+        const response = await fetch('/api/delete-blob', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            blobName: fileData.url.split('/').pop() // Extract blob name from URL
+          })
+        });
+        
+        if (!response.ok) {
+          console.error("Blob deletion failed:", await response.text());
+          // Continue with Firestore deletion even if blob deletion fails
+        }
+      } catch (error) {
+        console.error("Error deleting blob:", error);
+        // Continue with Firestore deletion
       }
     }
 
     // Delete related Firestore documents
-    const docRef = doc(db, "archiveItems", docId);
     await deleteDoc(docRef);
-    console.log("Document deleted from archiveItems");
-
+    
     // Delete from searchIndex
     const searchQuery = query(
       collection(db, "searchIndex"),
       where("itemId", "==", docId)
     );
     const searchSnapshot = await getDocs(searchQuery);
-    searchSnapshot.forEach(async (searchDoc) => {
-      await deleteDoc(doc(db, "searchIndex", searchDoc.id));
+    const searchDeletions = [];
+    searchSnapshot.forEach((searchDoc) => {
+      searchDeletions.push(deleteDoc(doc(db, "searchIndex", searchDoc.id)));
     });
-
+    
     // Delete from archiveCollections
     const collectionQuery = query(
       collection(db, "archiveCollections"),
       where("itemId", "==", docId)
     );
     const collectionSnapshot = await getDocs(collectionQuery);
-    collectionSnapshot.forEach(async (collDoc) => {
-      await deleteDoc(doc(db, "archiveCollections", collDoc.id));
+    const collectionDeletions = [];
+    collectionSnapshot.forEach((collDoc) => {
+      collectionDeletions.push(deleteDoc(doc(db, "archiveCollections", collDoc.id)));
     });
+    
+    // Wait for all deletions to complete
+    await Promise.all([...searchDeletions, ...collectionDeletions]);
 
     // Remove from user's uploads
     const userRef = doc(db, "users", user.uid);
@@ -827,6 +922,7 @@ async function deleteFile(docId, blobName) {
 
     // Refresh the file list
     displayFiles(user.uid);
+    alert('File deleted successfully!');
   } catch (error) {
     console.error("Error deleting file:", error);
     alert("Failed to delete file. Please try again.");
@@ -835,30 +931,55 @@ async function deleteFile(docId, blobName) {
 
 // Delete folder
 async function deleteFolder(folderId, userId) {
+  if (!confirm('Are you sure you want to delete this folder and all its contents?')) {
+    return;
+  }
+
   try {
-    // First delete all files in the folder
     const folderRef = doc(db, "folders", folderId);
     const folderDoc = await getDoc(folderRef);
     
-    if (folderDoc.exists()) {
-      const folderData = folderDoc.data();
-      const filesQuery = query(
-        collection(db, "archiveItems"),
-        where("uploadedBy", "==", userId),
-        where("path", "==", folderData.fullPath)
-      );
-      
-      const filesSnapshot = await getDocs(filesQuery);
-      for (const fileDoc of filesSnapshot.docs) {
-        await deleteFile(fileDoc.id, fileDoc.data().path);
-      }
-      
-      // Then delete the folder itself
-      await deleteDoc(folderRef);
-      
-      // Refresh the view
-      displayFiles(userId);
+    if (!folderDoc.exists()) {
+      throw new Error("Folder not found");
     }
+
+    const folderData = folderDoc.data();
+    const folderPath = folderData.fullPath;
+
+    // 1. First delete all files in this folder
+    const filesQuery = query(
+      collection(db, "archiveItems"),
+      where("uploadedBy", "==", userId),
+      where("path", "==", folderPath)
+    );
+    
+    const filesSnapshot = await getDocs(filesQuery);
+    const fileDeletions = [];
+    filesSnapshot.forEach((fileDoc) => {
+      fileDeletions.push(deleteFile(fileDoc.id, fileDoc.data().url));
+    });
+    await Promise.all(fileDeletions);
+
+    // 2. Delete all subfolders recursively
+    const subfoldersQuery = query(
+      collection(db, "folders"),
+      where("ownerId", "==", userId),
+      where("path", "==", folderPath)
+    );
+    
+    const subfoldersSnapshot = await getDocs(subfoldersQuery);
+    const folderDeletions = [];
+    subfoldersSnapshot.forEach((subfolderDoc) => {
+      folderDeletions.push(deleteFolder(subfolderDoc.id, userId));
+    });
+    await Promise.all(folderDeletions);
+
+    // 3. Finally delete the folder itself
+    await deleteDoc(folderRef);
+    
+    // Refresh the view
+    displayFiles(userId);
+    alert('Folder and all contents deleted successfully!');
   } catch (error) {
     console.error("Error deleting folder:", error);
     alert("Failed to delete folder. Please try again.");
