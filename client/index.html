@@ -7,7 +7,6 @@
     <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/search.css">
-    <!-- Removed Font Awesome links -->
 </head>
 <body>
     <nav>
@@ -25,61 +24,44 @@
                 <img src="./images/icons/dashboard.png" alt="Dashboard" class="nav-icon">
                 <p class="nav-text">Dashboard</p>
             </li>
-            <!-- <li>
-                <img src="./images/icons/documents.png" alt="Documents" class="nav-icon">
-                <p class="nav-text">Documents</p>
-            </li> -->
-            <!-- <li>
-                <img src="./images/icons/settings.png" alt="Settings" class="nav-icon">
-                <p class="nav-text">Settings</p>
-            </li> -->
-            <!-- <li>
-                <img src="./images/icons/history.png" alt="History" class="nav-icon">
-                <p class="nav-text">History</p>
-            </li> -->
         </ul>
-        
         <section class="profile-section">
             <li class="profile-item" aria-haspopup="true" aria-expanded="false">
                 <img src="./images/icons/user.png" alt="Profile" class="nav-icon">
                 <p class="nav-text">Profile</p>
-                
                 <ul class="profile-options">
-                  <li>
-                      <a href="login.html" class="nav-link">
-                          <img src="./images/icons/login.png" alt="Login" class="nav-icon">
-                          <p class="nav-text">Login</p>
-                      </a>
-                  </li>
-                  <li>
-                      <a href="signup.html" class="nav-link">
-                          <img src="./images/icons/signup.png" alt="Sign Up" class="nav-icon">
-                          <p class="nav-text">Sign Up</p>
-                      </a>
-                  </li>
-              </ul>
-            </li>
+                    <li>
+                        <a href="login.html" class="nav-link">
+                            <img src="./images/icons/login.png" alt="Login" class="nav-icon">
+                            <p class="nav-text">Login</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="signup.html" class="nav-link">
+                            <img src="./images/icons/signup.png" alt="Sign Up" class="nav-icon">
+                            <p class="nav-text">Sign Up</p>
+                        </a>
+                    </li>
+                </ul>
+            </section>
         </section>
     </nav>
-
     <main>
         <section class="centered-content">
-            <img src="./images/logo-long.png" alt="Scriptorium" class="main-logo">
-            
+            <img src="./images/logo-long.png" alt="Scriptorium Logo" class="main-logo">
             <section class="search-container">
-                <input type="text" placeholder="Search..." class="search-input">
+                <input type="text" class="search-input" placeholder="Search files...">
                 <button class="search-button">
                     <img src="./images/icons/search.png" alt="Search" class="search-icon">
                 </button>
                 <button class="filter-button">
-                    <img src="./images/icons/filter.png" alt="Filters" class="filter-icon">
+                    <img src="./images/icons/filter.png" alt="Filter" class="filter-icon">
                 </button>
             </section>
-            
             <section class="filter-section">
                 <section class="filter-row">
                     <section class="filter-group">
-                        <label>Type</label>
+                        <label for="filter-type">Type</label>
                         <select id="filter-type">
                             <option value="">All types</option>
                             <option value="image">Images</option>
@@ -94,7 +76,7 @@
                         </select>
                     </section>
                     <section class="filter-group">
-                        <label>Category</label>
+                        <label for="filter-category">Category</label>
                         <select id="filter-category">
                             <option value="">All categories</option>
                             <option value="general">General</option>
@@ -106,7 +88,7 @@
                 </section>
                 <section class="filter-row">
                     <section class="filter-group">
-                        <label>Date</label>
+                        <label for="filter-date">Date</label>
                         <select id="filter-date">
                             <option value="">Any time</option>
                             <option value="day">Today</option>
@@ -116,20 +98,33 @@
                         </select>
                     </section>
                     <section class="filter-group">
-                        <label>Tags</label>
+                        <label for="filter-tags">Tags</label>
                         <input type="text" id="filter-tags" placeholder="Enter tags...">
                     </section>
                 </section>
             </section>
-        
             <section class="search-results-container" style="display: none;">
-                <h2>Search Results</h2>
-                <section id="search-results" class="search-results-grid"></section>
+                <header class="search-results-header">
+                    <h2>Search Results</h2>
+                    <section class="sort-group">
+                        <label for="sort-option">Sort by</label>
+                        <select id="sort-option" onchange="performSearch()">
+                            <option value="title-asc">Title (A-Z)</option>
+                            <option value="title-desc">Title (Z-A)</option>
+                            <option value="date-desc">Date (Newest first)</option>
+                            <option value="date-asc">Date (Oldest first)</option>
+                            <option value="size-asc">Size (Smallest first)</option>
+                            <option value="size-desc">Size (Largest first)</option>
+                        </select>
+                    </section>
+                </header>
+                <section class="search-results-grid" id="search-results"></section>
                 <button class="clear-search-btn">Clear Results</button>
             </section>
         </section>
     </main>
 
     <script type="module" src="./js/home.js"></script>
+    <script type="module" src="./js/search.js"></script>
 </body>
 </html>
