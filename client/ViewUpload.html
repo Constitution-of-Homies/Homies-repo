@@ -1,113 +1,154 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Uploads | Scriptorium</title>
-    <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="css/ViewUpload.css">
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/back.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Uploads | Scriptorium</title>
+  <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="css/ViewUpload.css">
+  <link rel="stylesheet" href="css/upload.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/back.css">
 </head>
 <body>
-    <main>
-        <h1>My Files</h1>
-        <button class="back-button" onclick="window.location.href='profile.html'">
-            ← Go Back
-        </button>
+  <main>
+    <h1>My Files</h1>
+    <button class="back-button" onclick="window.location.href='profile.html'">← Go Back</button>
 
-        <!-- Add directory navigation breadcrumbs -->
-        <nav id="directory-breadcrumbs" class="breadcrumbs">
-            <button class="breadcrumb home" data-path="">Home</button>
-        </nav>
+    <!-- Breadcrumbs -->
+    <nav id="directory-breadcrumbs" class="breadcrumbs">
+      <button class="breadcrumb home" data-path="">Home</button>
+    </nav>
 
-        <!-- Add new directory controls -->
-        <section class="directory-controls">
-            <button id="create-folder-btn" class="action-btn">Create Folder</button>
-            <button id="upload-file-btn" class="action-btn">Upload File</button>
-        </section>
-
-        <section id="files-container"></section>
-    </main>
-
-    <!-- Edit Modal -->
-    <section id="edit-modal" class="modal">
-        <section class="modal-content">
-            <h2>Edit File Metadata</h2>
-            <form id="edit-form">
-                <label for="edit-title">Title</label>
-                <input type="text" id="edit-title" name="title" required>
-                <label for="edit-description">Description</label>
-                <textarea id="edit-description" name="description"></textarea>
-                <label for="edit-tags">Tags (comma separated)</label>
-                <input type="text" id="edit-tags" name="tags">
-                <label for="edit-category">Category</label>
-                <select id="edit-category" name="category">
-                    <option value="general">General</option>
-                    <option value="work">Work</option>
-                    <option value="personal">Personal</option>
-                    <option value="media">Media</option>
-                    <option value="documents">Documents</option>
-                </select>
-                <section class="modal-actions">
-                    <button type="button" id="cancel-edit">Cancel</button>
-                    <button type="submit">Save</button>
-                </section>
-            </form>
-        </section>
+    <!-- Action Buttons -->
+    <section class="directory-controls">
+      <button id="create-folder-btn" class="action-btn">Create Folder</button>
+      <button id="upload-file-btn" class="action-btn">Upload File</button>
     </section>
 
-    <!-- Folder Creation Modal -->
-    <section id="folder-modal" class="modal">
-        <section class="modal-content">
-            <h2>Create New Folder</h2>
-            <form id="folder-form">
-                <label for="folder-name">Folder Name</label>
-                <input type="text" id="folder-name" name="name" required>
-                <section class="modal-actions">
-                    <button type="button" id="cancel-folder">Cancel</button>
-                    <button type="submit">Create</button>
-                </section>
-            </form>
-        </section>
-    </section>
+    <!-- Files Display -->
+    <section id="files-container"></section>
+  </main>
 
-    <!-- Move File Modal -->
-    <section id="move-modal" class="modal">
-        <section class="modal-content">
-            <h2>Move File</h2>
-            <form id="move-form">
-                <p>Current Location: <p id="current-folder"></p></p>
-                <section class="form-group">
-                    <label for="target-folder">Move to:</label>
-                    <select id="target-folder" required>
-                        <option value="">Loading folders...</option>
-                    </select>
-                </section>
-                <section class="modal-actions">
-                    <button type="button" id="cancel-move">Cancel</button>
-                    <button type="submit">Move File</button>
-                </section>
-            </form>
-        </section>
-    </section>
-
-
-    <!-- Rename Folder Modal -->
-<section id="rename-folder-modal" class="modal">
+  <!-- Edit Modal -->
+  <section id="edit-modal" class="modal">
     <section class="modal-content">
-        <h2>Rename Folder</h2>
-        <form id="rename-folder-form">
-            <label for="new-folder-name">New Folder Name</label>
-            <input type="text" id="new-folder-name" name="name" required>
-            <section class="modal-actions">
-                <button type="button" id="cancel-rename-folder">Cancel</button>
-                <button type="submit">Rename</button>
-            </section>
-        </form>
+      <h2>Edit File Metadata</h2>
+      <form id="edit-form">
+        <label for="edit-title">Title</label>
+        <input type="text" id="edit-title" name="title" required>
+        <label for="edit-description">Description</label>
+        <textarea id="edit-description" name="description"></textarea>
+        <label for="edit-tags">Tags (comma separated)</label>
+        <input type="text" id="edit-tags" name="tags">
+        <label for="edit-category">Category</label>
+        <select id="edit-category" name="category">
+          <option value="general">General</option>
+          <option value="work">Work</option>
+          <option value="personal">Personal</option>
+          <option value="media">Media</option>
+          <option value="documents">Documents</option>
+        </select>
+        <section class="modal-actions">
+          <button type="button" id="cancel-edit">Cancel</button>
+          <button type="submit">Save</button>
+        </section>
+      </form>
     </section>
-</section>
+  </section>
 
-    <script type="module" src="js/ViewUpload.js"></script>
+  <!-- Create Folder Modal -->
+  <section id="folder-modal" class="modal">
+    <section class="modal-content">
+      <h2>Create New Folder</h2>
+      <form id="folder-form">
+        <label for="folder-name">Folder Name</label>
+        <input type="text" id="folder-name" name="name" required>
+        <section class="modal-actions">
+          <button type="button" id="cancel-folder">Cancel</button>
+          <button type="submit">Create</button>
+        </section>
+      </form>
+    </section>
+  </section>
+
+  <!-- Move Modal -->
+  <section id="move-modal" class="modal">
+    <section class="modal-content">
+      <h2>Move File</h2>
+      <form id="move-form">
+        <p>Current Location: <span id="current-folder"></span></p>
+        <section class="form-group">
+          <label for="target-folder">Move to:</label>
+          <select id="target-folder" required>
+            <option value="">Loading folders...</option>
+          </select>
+        </section>
+        <section class="modal-actions">
+          <button type="button" id="cancel-move">Cancel</button>
+          <button type="submit">Move File</button>
+        </section>
+      </form>
+    </section>
+  </section>
+
+  <!-- Rename Folder Modal -->
+  <section id="rename-folder-modal" class="modal">
+    <section class="modal-content">
+      <h2>Rename Folder</h2>
+      <form id="rename-folder-form">
+        <label for="new-folder-name">New Folder Name</label>
+        <input type="text" id="new-folder-name" name="name" required>
+        <section class="modal-actions">
+          <button type="button" id="cancel-rename-folder">Cancel</button>
+          <button type="submit">Rename</button>
+        </section>
+      </form>
+    </section>
+  </section>
+
+  <!-- Upload Modal (from upload.html) -->
+  <section id="upload-modal" class="modal">
+    <section class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+      <h2>Upload Files</h2>
+      <section class="upload-container">
+        <section class="drop-zone" id="dropZone">
+          <p class="drop-zone__prompt">Drop files here or click to select</p>
+          <input type="file" id="fileInput" class="drop-zone__input" multiple>
+        </section>
+
+        <section class="file-preview" id="filePreview">
+          <h3>Files to Upload</h3>
+          <section id="previewList"></section>
+        </section>
+
+        <button class="upload-btn" id="uploadBtn">Upload Files</button>
+        <button class="cancel-btn" id="cancelBtn">Clear Selection</button>
+      </section>
+
+      <section class="progress-container" id="progressContainer">
+        <section id="fileInfo">Uploading file...</section>
+        <section class="progress-bar">
+          <section class="progress-fill" id="progressBar"></section>
+        </section>
+        <section id="progressText">0%</section>
+      </section>
+
+      <section class="file-list" id="fileList"></section>
+    </section>
+  </section>
+
+  <!-- Scripts -->
+  <script type="module" src="js/ViewUpload.js"></script>
+  <script type="module" src="js/upload.js"></script>
+
+  <!-- Close modal when clicking outside -->
+  <script>
+    document.getElementById('upload-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'upload-modal') {
+        document.getElementById('upload-modal').style.display = 'none';
+      }
+    });
+  </script>
 </body>
 </html>
