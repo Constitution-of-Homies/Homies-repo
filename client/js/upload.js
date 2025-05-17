@@ -27,6 +27,10 @@ const previewList = document.getElementById('previewList');
 // Store files with metadata
 let filesToUpload = [];
 let currentUser = null;
+let uploadPath = "";
+export function setUploadPath(path) {
+  uploadPath = path || "";
+}
 
 // Initialize auth state listener
 onAuthStateChanged(auth, (user) => {
@@ -297,6 +301,12 @@ async function uploadFiles() {
     }
 
     alert('All files uploaded successfully!');
+    setTimeout(() => {
+      document.getElementById('upload-modal').style.display = 'none';
+    
+      // Tell ViewUpload.js to refresh file list
+      window.dispatchEvent(new CustomEvent('filesUploaded'));
+    }, 1000);
   } catch (error) {
     console.error('Upload process failed:', error);
     alert('Upload process failed. Please try again.');
@@ -316,12 +326,12 @@ export async function addToFirestoreCollections(fileData, fileUrl, user) {
   const archiveItemRef = await addDoc(collection(db, "archiveItems"), {
     name: fileData.metadata.name,
     type: fileType,
-    size: fileData.metadata.size,
+    size: fileData.file.size,
     url: fileUrl,
     lastModified: fileData.metadata.lastModified,
     uploadedBy: user.uid,
     uploadedAt: timestamp,
-    path: "/",
+    path: uploadPath,
     metadata: {
       title: metadata.title,
       description: metadata.description,
