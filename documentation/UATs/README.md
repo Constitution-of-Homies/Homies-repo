@@ -1,4 +1,4 @@
-# User Acceptance tests for sprint 3
+# 🔎 User Acceptance tests for sprint 3
 
 1. __given__ I am admin, __when__ I create folders, __then__ I see the created folder
 2. __given__ I am admin, __when__ I move files, __then__ I see the pushed changes

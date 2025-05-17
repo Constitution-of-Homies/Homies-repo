@@ -15,31 +15,64 @@ import {
     getDocs
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
+let currentSearchTerm = '';
+let currentFilters = {
+    type: '',
+    category: '',
+    date: '',
+    tags: ''
+};
+let currentPage = 1;
+const resultsPerPage = 2;
+
 // Profile dropdown functionality
-document.querySelector('.profile-item').addEventListener('mouseenter', function() {
-    this.setAttribute('aria-expanded', 'true');
-});
-document.querySelector('.profile-item').addEventListener('mouseleave', function() {
-    this.setAttribute('aria-expanded', 'false');
-});
+const profileItem = document.querySelector('.profile-item');
+if (profileItem) {
+    profileItem.addEventListener('mouseenter', function() {
+        this.setAttribute('aria-expanded', 'true');
+    });
+    profileItem.addEventListener('mouseleave', function() {
+        this.setAttribute('aria-expanded', 'false');
+    });
+}
 
 // Filter section toggle
-document.addEventListener('DOMContentLoaded', function() {
-    const filterButton = document.querySelector('.filter-button');
-    const filterSection = document.querySelector('.filter-section');
-    
+const filterButton = document.querySelector('.filter-button');
+const filterSection = document.querySelector('.filter-section');
+if (filterButton && filterSection) {
     filterButton.addEventListener('click', function() {
         filterSection.classList.toggle('active');
         
         const searchContainer = document.querySelector('.search-container');
-        if (filterSection.classList.contains('active')) {
-            searchContainer.style.borderRadius = '4px 4px 0 0';
-        } else {
-            searchContainer.style.borderRadius = '4px';
+        if (searchContainer) {
+            if (filterSection.classList.contains('active')) {
+                searchContainer.style.borderRadius = '4px 4px 0 0';
+            } else {
+                searchContainer.style.borderRadius = '4px';
+            }
+        }
+        
+        // If filters are visible and we have a search term, perform search
+        if (filterSection.classList.contains('active') && currentSearchTerm) {
+            performSearch();
         }
     });
+}
 
-    // Check auth state
+// Search functionality
+const searchButton = document.querySelector('.search-button');
+const searchInput = document.querySelector('.search-input');
+if (searchButton && searchInput) {
+    searchButton.addEventListener('click', performSearch);
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+}
+
+// Check auth state
+document.addEventListener('DOMContentLoaded', function() {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             try {
@@ -80,14 +113,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function updateProfileSection(user, userData = null) {
     const profileItem = document.querySelector('.profile-item');
-    const profileIcon = profileItem.querySelector('.nav-icon');
+    if (!profileItem) return;
+
+    const profileIcon = profileItem.querySelector('img');
     const profileText = profileItem.querySelector('.nav-text');
     
+    if (!profileIcon || !profileText) {
+        console.error('Profile icon or text not found');
+        return;
+    }
+
     // Update profile text with username
-    profileText.textContent = userData?.username || user.displayName || "Profile";
+    profileText.textContent = userData?.username || user?.displayName || "Profile";
     
     // Update profile picture if available
-    if (userData?.photoURL || user.photoURL) {
+    if (userData?.photoURL || user?.photoURL) {
         profileIcon.src = userData?.photoURL || user.photoURL;
         profileIcon.style.borderRadius = '50%'; // Make it circular
         profileIcon.classList.add('user-avatar'); // Add class for custom styling
@@ -101,11 +141,15 @@ function updateProfileSection(user, userData = null) {
     }
     
     // Update dropdown menu for logged in user
-    updateUIForAuthState(true);
+    updateUIForAuthState(!!user);
 }
 
 function updateUIForAuthState(isLoggedIn) {
     const profileOptions = document.querySelector('.profile-options');
+    if (!profileOptions) {
+        console.error('Profile options not found');
+        return;
+    }
     
     if (isLoggedIn) {
         // Update profile options for logged in user
@@ -119,15 +163,18 @@ function updateUIForAuthState(isLoggedIn) {
         `;
         
         // Add logout functionality
-        document.getElementById('logout-btn')?.addEventListener('click', async (e) => {
-            e.preventDefault();
-            try {
-                await signOut(auth);
-                window.location.reload();
-            } catch (error) {
-                console.error("Logout error:", error);
-            }
-        });
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                try {
+                    await signOut(auth);
+                    window.location.reload();
+                } catch (error) {
+                    console.error("Logout error:", error);
+                }
+            });
+        }
     } else {
         // Keep or restore the original login/signup options
         profileOptions.innerHTML = `
@@ -147,44 +194,43 @@ function updateUIForAuthState(isLoggedIn) {
     }
 }
 
-// Search functionality
-document.querySelector('.search-button').addEventListener('click', performSearch);
-document.querySelector('.search-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        performSearch();
-    }
-});
+window.currentSearchResults = [];
 
 async function performSearch() {
-    const searchTerm = document.querySelector('.search-input').value.trim();
-    if (!searchTerm) return;
+    currentPage = 1; // Reset to first page on new search
+    const searchInput = document.querySelector('.search-input');
+    if (!searchInput) return;
     
-    const user = auth.currentUser;
-    // if (!user) {
-    //     alert('Please sign in to search');
-    //     return;
-    // }
+    const searchTerm = searchInput.value.trim();
+    currentSearchTerm = searchTerm;
+    
+    // Get current filter values
+    currentFilters = {
+        type: document.getElementById('filter-type')?.value || '',
+        category: document.getElementById('filter-category')?.value || '',
+        date: document.getElementById('filter-date')?.value || '',
+        tags: document.getElementById('filter-tags')?.value.toLowerCase() || ''
+    };
 
     try {
-        // Create a query for the user's files
-        const q = query(
-            collection(db, "archiveItems"),
-            where("uploadedBy", "==", user.uid)
-        );
+        // Create a base query for ALL files
+        let q = query(collection(db, "archiveItems"));
         
         // Execute the query
         const querySnapshot = await getDocs(q);
         
         // Filter results in memory
-        const results = [];
+        const allResults = [];
         querySnapshot.forEach((doc) => {
             const file = doc.data();
-            if (matchesSearchTerm(file, searchTerm)) {
-                results.push({ id: doc.id, ...file });
+            if (matchesSearchTerm(file, searchTerm) && matchesFilters(file)) {
+                allResults.push({ id: doc.id, ...file });
             }
         });
         
-        displaySearchResults(results);
+        // Store all results and display first page
+        window.currentSearchResults = allResults;
+        displaySearchResults(allResults);
     } catch (error) {
         console.error("Search error:", error);
         alert("Error performing search");
@@ -192,6 +238,7 @@ async function performSearch() {
 }
 
 function matchesSearchTerm(file, searchTerm) {
+    if (!searchTerm) return true;
     const lowerSearchTerm = searchTerm.toLowerCase();
     
     // Check title
@@ -217,19 +264,101 @@ function matchesSearchTerm(file, searchTerm) {
     return false;
 }
 
-function displaySearchResults(results) {
+function matchesFilters(file) {
+    // Type filter
+    if (currentFilters.type && getSimplifiedType(file.type) !== currentFilters.type) {
+        return false;
+    }
+    
+    // Category filter
+    if (currentFilters.category && file.metadata?.category !== currentFilters.category) {
+        return false;
+    }
+    
+    // Date filter
+    if (currentFilters.date && file.uploadedAt) {
+        const fileDate = file.uploadedAt.toDate();
+        const now = new Date();
+        
+        switch(currentFilters.date) {
+            case 'day':
+                if (!isSameDay(fileDate, now)) return false;
+                break;
+            case 'week':
+                if (!isSameWeek(fileDate, now)) return false;
+                break;
+            case 'month':
+                if (!isSameMonth(fileDate, now)) return false;
+                break;
+            case 'year':
+                if (fileDate.getFullYear() !== now.getFullYear()) return false;
+                break;
+        }
+    }
+    
+    // Tags filter
+    if (currentFilters.tags) {
+        const tagTerms = currentFilters.tags.split(',').map(t => t.trim());
+        if (!file.metadata?.tags || 
+            !tagTerms.every(tag => 
+                file.metadata.tags.some(fileTag => 
+                    fileTag.toLowerCase().includes(tag)
+                )
+            )
+        ) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Add these date helper functions
+function isSameDay(date1, date2) {
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getDate() === date2.getDate();
+}
+
+function isSameWeek(date1, date2) {
+    const oneDay = 24 * 60 * 60 * 1000;
+    const diffDays = Math.round(Math.abs((date1 - date2) / oneDay));
+    return diffDays <= 7 && date1.getDay() <= date2.getDay();
+}
+
+function isSameMonth(date1, date2) {
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth();
+}
+
+function displaySearchResults(allResults) {
     const resultsContainer = document.getElementById('search-results');
     const searchContainer = document.querySelector('.search-results-container');
+    const clearBtn = document.querySelector('.clear-search-btn');
+    const paginationContainer = document.querySelector('.pagination-container');
     
-    if (!results || results.length === 0) {
-        resultsContainer.innerHTML = '<p>No results found</p>';
-        searchContainer.style.display = 'block';
+    if (!resultsContainer || !searchContainer) {
+        console.error('Search results container not found');
         return;
     }
     
+    if (!allResults || allResults.length === 0) {
+        resultsContainer.innerHTML = '<p>No results found</p>';
+        searchContainer.style.display = 'block';
+        if (paginationContainer) paginationContainer.style.display = 'none';
+        return;
+    }
+    
+    // Calculate pagination
+    const totalPages = Math.ceil(allResults.length / resultsPerPage);
+    const startIndex = (currentPage - 1) * resultsPerPage;
+    const endIndex = Math.min(startIndex + resultsPerPage, allResults.length);
+    const pageResults = allResults.slice(startIndex, endIndex);
+    
+    // Display results
     resultsContainer.innerHTML = '';
     
-    results.forEach((file) => {
+    pageResults.forEach((file) => {
         const fileType = getSimplifiedType(file.type);
         const fileIcon = getFileIcon(fileType);
         
@@ -239,6 +368,7 @@ function displaySearchResults(results) {
             <div class="search-result-icon">${fileIcon}</div>
             <div class="search-result-details">
                 <h3>${file.metadata?.title || file.name || 'Untitled'}</h3>
+                ${file.uploadedBy ? `<p class="search-result-uploader">Uploaded by: ${file.uploadedByName || 'Anonymous'}</p>` : ''}
                 <p class="search-result-description">${file.metadata?.description || 'No description'}</p>
                 <div class="search-result-meta">
                     <span>${formatFileSize(file.size)}</span>
@@ -253,10 +383,144 @@ function displaySearchResults(results) {
         resultsContainer.appendChild(resultItem);
     });
     
+    // Create or update pagination controls
+    if (!paginationContainer) {
+        const newPaginationContainer = document.createElement('div');
+        newPaginationContainer.className = 'pagination-container';
+        searchContainer.appendChild(newPaginationContainer);
+        updatePaginationControls(newPaginationContainer, allResults.length, totalPages);
+    } else {
+        paginationContainer.style.display = 'flex';
+        updatePaginationControls(paginationContainer, allResults.length, totalPages);
+    }
+    
     searchContainer.style.display = 'block';
+    
+    // Add event listener for clear button
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearSearchResults);
+    }
 }
 
-// Helper functions (add these if not already present)
+function updatePaginationControls(container, totalResults, totalPages) {
+    container.innerHTML = `
+        <div class="pagination-info">
+            Showing ${((currentPage - 1) * resultsPerPage) + 1}-${Math.min(currentPage * resultsPerPage, totalResults)} of ${totalResults} results
+        </div>
+        <div class="pagination-buttons">
+            <button class="pagination-btn ${currentPage === 1 ? 'disabled' : ''}" id="prev-page">
+                Previous
+            </button>
+            <div class="page-numbers">
+                ${generatePageNumbers(totalPages)}
+            </div>
+            <button class="pagination-btn ${currentPage === totalPages ? 'disabled' : ''}" id="next-page">
+                Next
+            </button>
+        </div>
+    `;
+    
+    // Add event listeners
+    const prevPage = document.getElementById('prev-page');
+    const nextPage = document.getElementById('next-page');
+    if (prevPage) {
+        prevPage.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                displaySearchResults(window.currentSearchResults);
+            }
+        });
+    }
+    
+    if (nextPage) {
+        nextPage.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                displaySearchResults(window.currentSearchResults);
+            }
+        });
+    }
+    
+    // Add event listeners for page numbers
+    document.querySelectorAll('.page-number').forEach(button => {
+        button.addEventListener('click', (e) => {
+            currentPage = parseInt(e.target.textContent);
+            displaySearchResults(window.currentSearchResults);
+        });
+    });
+}
+
+function generatePageNumbers(totalPages) {
+    let pagesHtml = '';
+    const maxVisiblePages = 5; // Show up to 5 page numbers
+    
+    if (totalPages <= maxVisiblePages) {
+        // Show all pages
+        for (let i = 1; i <= totalPages; i++) {
+            pagesHtml += `<button class="page-number ${i === currentPage ? 'active' : ''}">${i}</button>`;
+        }
+    } else {
+        // Show limited pages with ellipsis
+        if (currentPage <= 3) {
+            // Show first 3 pages, ellipsis, last page
+            for (let i = 1; i <= 3; i++) {
+                pagesHtml += `<button class="page-number ${i === currentPage ? 'active' : ''}">${i}</button>`;
+            }
+            pagesHtml += `<span class="ellipsis">...</span>`;
+            pagesHtml += `<button class="page-number">${totalPages}</button>`;
+        } else if (currentPage >= totalPages - 2) {
+            // Show first page, ellipsis, last 3 pages
+            pagesHtml += `<button class="page-number">1</button>`;
+            pagesHtml += `<span class="ellipsis">...</span>`;
+            for (let i = totalPages - 2; i <= totalPages; i++) {
+                pagesHtml += `<button class="page-number ${i === currentPage ? 'active' : ''}">${i}</button>`;
+            }
+        } else {
+            // Show first page, ellipsis, current page ±1, ellipsis, last page
+            pagesHtml += `<button class="page-number">1</button>`;
+            pagesHtml += `<span class="ellipsis">...</span>`;
+            for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                pagesHtml += `<button class="page-number ${i === currentPage ? 'active' : ''}">${i}</button>`;
+            }
+            pagesHtml += `<span class="ellipsis">...</span>`;
+            pagesHtml += `<button class="page-number">${totalPages}</button>`;
+        }
+    }
+    
+    return pagesHtml;
+}
+
+function clearSearchResults() {
+    const searchInput = document.querySelector('.search-input');
+    if (searchInput) searchInput.value = '';
+    const filterType = document.getElementById('filter-type');
+    const filterCategory = document.getElementById('filter-category');
+    const filterDate = document.getElementById('filter-date');
+    const filterTags = document.getElementById('filter-tags');
+    if (filterType) filterType.value = '';
+    if (filterCategory) filterCategory.value = '';
+    if (filterDate) filterDate.value = '';
+    if (filterTags) filterTags.value = '';
+    
+    const searchContainer = document.querySelector('.search-results-container');
+    const searchResults = document.getElementById('search-results');
+    const paginationContainer = document.querySelector('.pagination-container');
+    if (searchContainer) searchContainer.style.display = 'none';
+    if (searchResults) searchResults.innerHTML = '';
+    if (paginationContainer) paginationContainer.style.display = 'none';
+    
+    currentSearchTerm = '';
+    currentPage = 1;
+    currentFilters = {
+        type: '',
+        category: '',
+        date: '',
+        tags: ''
+    };
+    window.currentSearchResults = [];
+}
+
+// Helper functions
 function getSimplifiedType(fileType) {
     if (!fileType) return 'default';
     const type = fileType.toLowerCase();
@@ -304,3 +568,6 @@ function formatDate(date) {
         day: 'numeric'
     });
 }
+
+// Export helpers for testing
+export { formatFileSize, formatDate, getSimplifiedType, getFileIcon };
