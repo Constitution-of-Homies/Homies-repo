@@ -54,7 +54,7 @@ async function performSearch() {
     }
 
     try {
-        // Show loading spinner
+        // Initialize UI
         const resultsContainer = document.getElementById('search-results');
         const searchContainer = document.querySelector('.search-results-container');
         if (resultsContainer && searchContainer) {
@@ -62,46 +62,64 @@ async function performSearch() {
             searchContainer.style.display = 'block';
         }
 
+        // Initialize results array
+        window.currentSearchResults = [];
+
         // Fetch documents from searchIndex
         let q = query(collection(db, "searchIndex"));
         const querySnapshot = await getDocs(q);
         
-        const allResults = [];
+        // Process each document and append immediately
         for (const searchDoc of querySnapshot.docs) {
             const searchData = searchDoc.data();
-            // Get corresponding archiveItem for metadata
             const archiveDoc = await getDoc(doc(db, "archiveItems", searchData.itemId));
-            if (!archiveDoc.exists()) continue;
+            if (!archiveDoc.exists()) {
+                console.log(`Archive item not found for searchDoc: ${searchDoc.id}`);
+                continue;
+            }
 
             const file = archiveDoc.data();
             file.id = archiveDoc.id;
             file.embeddings = searchData.embeddings || [];
             file.contentSnippet = searchData.content 
                 ? searchData.content.substring(0, 100) + (searchData.content.length > 100 ? '...' : '') 
-                : 'No content available';
+                : `File name: ${file.name || 'Untitled'}`;
 
             let relevanceScore = 0;
             if (useNLP) {
-                // NLP-based search
                 const queryEmbeddings = await generateQueryEmbeddings(searchTerm);
                 relevanceScore = file.embeddings.length > 0 
                     ? cosineSimilarity(queryEmbeddings, file.embeddings)
-                    : 0;
+                    : calculateKeywordMatch(searchTerm, '', file); // Fallback to name-based search if no embeddings
             } else {
-                // Keyword-based search
-                relevanceScore = calculateKeywordMatch(searchTerm, searchData.content, file);
+                relevanceScore = calculateKeywordMatch(searchTerm, searchData.content || '', file);
             }
 
-            if (matchesFilters(file) && relevanceScore > 0.1) { // Threshold for relevance
-                allResults.push({ ...file, similarity: relevanceScore });
+            if (matchesFilters(file) && relevanceScore > 0) {
+                const result = { ...file, similarity: relevanceScore };
+                window.currentSearchResults.push(result);
+                
+                // Append result to DOM immediately
+                appendSearchResult(result, resultsContainer, currentSort);
+                
+                // Remove loading spinner if at least one result is displayed
+                const spinner = resultsContainer.querySelector('.loading-spinner');
+                if (spinner) {
+                    spinner.remove();
+                }
             }
         }
-        
-        // Sort results
-        const sortedResults = sortResults(allResults, currentSort);
-        window.currentSearchResults = sortedResults;
-        displaySearchResults(sortedResults);
-        
+
+        // Final sort if needed
+        if (window.currentSearchResults.length > 0 && resultsContainer) {
+            const sortedResults = sortResults(window.currentSearchResults, currentSort);
+            window.currentSearchResults = sortedResults;
+            resultsContainer.innerHTML = ''; // Clear and re-render for final sort
+            sortedResults.forEach(result => appendSearchResult(result, resultsContainer, currentSort, false));
+        } else if (window.currentSearchResults.length === 0 && resultsContainer) {
+            resultsContainer.innerHTML = '<p>No results found with relevance above 0.</p>';
+        }
+
         // Add search-active class
         const centeredContent = document.querySelector('.centered-content');
         if (centeredContent) {
@@ -117,41 +135,132 @@ async function performSearch() {
     }
 }
 
-// Calculate keyword match score
-function calculateKeywordMatch(searchTerm, content, file) {
-    if (!content || !searchTerm) return 0;
+// Append a single search result to the DOM
+function appendSearchResult(file, resultsContainer, sortOption, insertSorted = true) {
+    if (!resultsContainer) return;
+
+    const fileType = getSimplifiedType(file.type);
+    const fileIcon = getFileIcon(fileType);
     
-    const searchWords = searchTerm.toLowerCase().split(/\s+/);
-    const contentWords = content.toLowerCase();
-    const title = (file.metadata?.title || file.name || '').toLowerCase();
-    
-    let matchScore = 0;
-    
-    // Check matches in content
-    searchWords.forEach(word => {
-        if (contentWords.includes(word)) {
-            matchScore += 0.3; // Weight for content match
-        }
-    });
-    
-    // Check matches in title
-    searchWords.forEach(word => {
-        if (title.includes(word)) {
-            matchScore += 1; // Higher weight for title match
-        }
-    });
-    
-    // Check matches in tags
-    if (file.metadata?.tags) {
-        searchWords.forEach(word => {
-            if (file.metadata.tags.some(tag => tag.toLowerCase().includes(word))) {
-                matchScore += 1; // Weight for tag match
+    const resultItem = document.createElement('div');
+    resultItem.className = 'search-result-item';
+    resultItem.innerHTML = `
+        <div class="search-result-icon">${fileIcon}</div>
+        <div class="search-result-details">
+            <h3>${file.metadata?.title || file.name || 'Untitled'}</h3>
+            ${file.uploadedBy ? `<p class="search-result-uploader">Uploaded by: ${file.uploadedByName || 'Anonymous'}</p>` : ''}
+            <p class="search-result-snippet">${file.contentSnippet}</p>
+            <p class="search-result-description">${file.metadata?.description || 'No description'}</p>
+            <div class="search-result-meta">
+                <span>${formatFileSize(file.size)}</span>
+                <span>${formatDate(file.uploadedAt?.toDate())}</span>
+                <span>Relevance: ${(file.similarity * 100).toFixed(1)}%</span>
+            </div>
+        </div>
+        <div class="search-result-actions">
+            <a href="${file.url}" target="_blank" class="view-btn">
+                <img src="images/icons/view.png" alt="View">
+            </a>
+            <a href="${file.url}" download="${file.name}" class="download-btn">
+                <img src="images/icons/download.png" alt="Download">
+            </a>
+        </div>
+    `;
+
+    if (insertSorted) {
+        // Insert in sorted position
+        const existingItems = Array.from(resultsContainer.querySelectorAll('.search-result-item'));
+        let inserted = false;
+        for (let i = 0; i < existingItems.length; i++) {
+            const existingFile = window.currentSearchResults[i];
+            if (compareResults(file, existingFile, sortOption) < 0) {
+                resultsContainer.insertBefore(resultItem, existingItems[i]);
+                inserted = true;
+                break;
             }
-        });
+        }
+        if (!inserted) {
+            resultsContainer.appendChild(resultItem);
+        }
+    } else {
+        // Append directly (used for final re-sort)
+        resultsContainer.appendChild(resultItem);
+    }
+}
+
+// Helper function to compare two results for sorting
+function compareResults(a, b, sortOption) {
+    switch (sortOption) {
+        case 'relevance':
+            return (b.similarity || 0) - (a.similarity || 0);
+        case 'date-desc':
+            return (b.uploadedAt?.toDate() || new Date()) - (a.uploadedAt?.toDate() || new Date());
+        case 'date-asc':
+            return (a.uploadedAt?.toDate() || new Date()) - (b.uploadedAt?.toDate() || new Date());
+        case 'title-asc':
+            return (a.metadata?.title || a.name || '').localeCompare(b.metadata?.title || b.name || '');
+        case 'title-desc':
+            return (b.metadata?.title || b.name || '').localeCompare(a.metadata?.title || b.name || '');
+        case 'size-asc':
+            return (a.size || 0) - (b.size || 0);
+        case 'size-desc':
+            return (b.size || 0) - (a.size || 0);
+        default:
+            return (b.similarity || 0) - (a.similarity || 0);
+    }
+}
+
+// Calculate keyword match score
+const WORD_COUNT_THRESHOLD = 10; // Documents with fewer than this many words get 1.0 if any search word appears
+const STOP_WORDS = [
+    'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from',
+    'has', 'he', 'in', 'is', 'it', 'its', 'of', 'on', 'that', 'the',
+    'to', 'was', 'were', 'will', 'with'
+];
+function calculateKeywordMatch(searchTerm, content, file) {
+    if (!searchTerm) return 0;
+    
+    // Split and filter out stop words
+    const searchWords = searchTerm.toLowerCase()
+        .split(/\s+/)
+        .filter(word => word.length > 0 && !STOP_WORDS.includes(word));
+    
+    // If no valid search words remain, return 0
+    if (searchWords.length === 0) return 0;
+    
+    // Use content if available, otherwise use file name
+    const contentText = content ? content.toLowerCase() : '';
+    const title = (file.metadata?.title || file.name || '').toLowerCase();
+    const tags = file.metadata?.tags ? file.metadata.tags.map(tag => tag.toLowerCase()).join(' ') : '';
+    
+    // Combine available text for search
+    const allText = contentText ? `${contentText} ${title} ${tags}` : `${title} ${tags}`;
+    const wordCount = allText.split(/\s+/).filter(word => word.length > 0).length;
+    
+    let anyMatch = false;
+    let totalOccurrences = 0;
+    
+    // Check for matches and count occurrences
+    searchWords.forEach(word => {
+        const wordRegex = new RegExp(`\\b${word}\\b`, 'g');
+        const contentMatches = contentText ? (contentText.match(wordRegex) || []).length : 0;
+        const titleMatches = (title.match(wordRegex) || []).length;
+        const tagsMatches = (tags.match(wordRegex) || []).length;
+        const matches = contentMatches + titleMatches + tagsMatches;
+        if (matches > 0) {
+            anyMatch = true;
+        }
+        totalOccurrences += matches;
+    });
+    
+    // If document has fewer than threshold words and any search word appears, return 1.0
+    if (wordCount < WORD_COUNT_THRESHOLD && anyMatch) {
+        return 1.0;
     }
     
-    // Normalize score to 0-1 range
-    return Math.min(matchScore / (searchWords.length * 1.0), 1.0);
+    // Otherwise, use occurrence-based scoring: 0.05 per occurrence, capped at 1.0
+    const matchScore = totalOccurrences * 0.05;
+    return Math.min(matchScore, 1.0);
 }
 
 // Call the generateEmbeddings API
@@ -273,7 +382,7 @@ function sortResults(results, sortOption) {
             case 'title-asc':
                 return (a.metadata?.title || a.name || '').localeCompare(b.metadata?.title || b.name || '');
             case 'title-desc':
-                return (b.metadata?.title || b.name || '').localeCompare(a.metadata?.title || a.name || '');
+                return (b.metadata?.title || b.name || '').localeCompare(a.metadata?.title || b.name || '');
             case 'size-asc':
                 return (a.size || 0) - (b.size || 0);
             case 'size-desc':
@@ -383,23 +492,25 @@ function getSimplifiedType(fileType) {
     if (type.includes('spreadsheet') || type.includes('excel')) return 'spreadsheet';
     if (type.includes('presentation') || type.includes('powerpoint')) return 'presentation';
     if (type.includes('zip') || type.includes('rar') || type.includes('tar') || type.includes('7z')) return 'archive';
+    if (type.includes('text')) return 'text';
     if (type.includes('javascript') || type.includes('python') || type.includes('java') || type.includes('html') || type.includes('css')) return 'code';
     return type.split('/')[0] || 'default';
 }
 
 function getFileIcon(type) {
     const fileIcons = {
-        image: '🖼️',
-        video: '🎬',
-        audio: '🎵',
-        document: '📄',
-        spreadsheet: '📊',
-        presentation: '📑',
-        archive: '🗄️',
-        code: '💻',
-        pdf: '📕',
-        folder: '📁',
-        default: '📄'
+        image: '<img src="images/icons/image.png" alt="Image Icon" class="file-icon">',
+        video: '<img src="images/icons/video.png" alt="Video Icon" class="file-icon">',
+        audio: '<img src="images/icons/audio.png" alt="Audio Icon" class="file-icon">',
+        document: '<img src="images/icons/document.png" alt="Document Icon" class="file-icon">',
+        spreadsheet: '<img src="images/icons/spreadsheet.png" alt="Spreadsheet Icon" class="file-icon">',
+        presentation: '<img src="images/icons/presentation.png" alt="Presentation Icon" class="file-icon">',
+        archive: '<img src="images/icons/archive.png" alt="Archive Icon" class="file-icon">',
+        code: '<img src="images/icons/code.png" alt="Code Icon" class="file-icon">',
+        pdf: '<img src="images/icons/pdf.png" alt="PDF Icon" class="file-icon">',
+        text: '<img src="images/icons/text.png" alt="Text Icon" class="file-icon">',
+        folder: '<img src="images/icons/folder.png" alt="Folder Icon" class="file-icon">',
+        default: '<img src="images/icons/default.png" alt="Default Icon" class="file-icon">'
     };
     return fileIcons[type] || fileIcons.default;
 }

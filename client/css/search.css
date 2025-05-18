@@ -147,7 +147,7 @@
   padding: 20px;
   background: #fff;
   border-radius: 8px;
-  box-shadow: 0  candid4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .search-results-header {
@@ -243,13 +243,20 @@
 .search-result-item:hover {
   background: #f0f6ff;
   border-color: #b3d4ff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, Vk0.05);
 }
 
 .search-result-icon {
-  font-size: 2rem;
   margin-right: 12px;
-  color: #4b5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
 }
 
 .search-result-details {
