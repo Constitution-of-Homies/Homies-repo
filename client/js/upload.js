@@ -35,13 +35,13 @@ export function setUploadPath(path) {
 // Initialize auth state listener
 onAuthStateChanged(auth, (user) => {
   currentUser = user;
-  if (!user) {
-    console.log("User is not authenticated");
-    uploadBtn.disabled = true;
-  } else {
-    console.log("User is authenticated:", user.uid);
-    uploadBtn.disabled = false;
-  }
+  // if (!user) {
+  //   console.log("User is not authenticated");
+  //   uploadBtn.disabled = true;
+  // } else {
+  //   console.log("User is authenticated:", user.uid);
+  //   uploadBtn.disabled = false;
+  // }
 });
 
 // Initialize drag and drop
