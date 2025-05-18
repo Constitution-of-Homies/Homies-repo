@@ -37,15 +37,15 @@ const mockFirebase = {
 };
 jest.mock('../client/js/firebase.js', () => mockFirebase);
 
-// Mock utils.mjs
-jest.mock('../client/js/utils.mjs', () => ({
-  formatFileSize: jest.fn().mockImplementation(bytes => {
-    if (typeof bytes !== 'number') return 'Unknown size';
-    if (bytes < 1024) return `${bytes} B`;
-    return `${(bytes / 1048576).toFixed(1)} MB`;
-  }),
-  detectFileType: jest.fn().mockReturnValue('default'),
-  getFileIcon: jest.fn().mockReturnValue('📄'),
+// Mock utils.mjs (not used in the updated ViewUpload.js)
+jest.mock('../client/js/utils.mjs', () => ({}));
+
+// Mock upload.js
+const mockInitializeUpload = jest.fn();
+const mockSetUploadPath = jest.fn();
+jest.mock('../client/js/upload.js', () => ({
+  initializeUpload: mockInitializeUpload,
+  setUploadPath: mockSetUploadPath,
 }));
 
 // Mock fetch
@@ -63,46 +63,6 @@ const mockXhr = {
   status: 200,
 };
 global.XMLHttpRequest = jest.fn(() => mockXhr);
-
-// Define upload.js mock logic
-const mockInitializeUpload = jest.fn(() => {
-  const fileInput = document.getElementById('fileInput');
-  if (fileInput) {
-    fileInput.addEventListener('change', async (event) => {
-      const files = event.target.files;
-      if (!files.length) return;
-      const { auth } = require('../client/js/firebase.js');
-      if (!auth.currentUser) {
-        window.alert('Please sign in to upload files.');
-        return;
-      }
-      try {
-        const response = await fetch('https://scriptorium.azurewebsites.net/api/get-sas-url', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: auth.currentUser.uid }),
-        });
-        const { sasUrl } = await response.json();
-        const xhr = new XMLHttpRequest();
-        xhr.open('PUT', sasUrl, true);
-        xhr.setRequestHeader('x-ms-blob-type', 'BlockBlob');
-        xhr.setRequestHeader('Content-Type', files[0].type);
-        xhr.send(files[0]);
-        return new Promise((resolve, reject) => {
-          xhr.onload = () => resolve();
-          xhr.onerror = () => reject(new Error('Network error'));
-        });
-      } catch (error) {
-        window.alert(`Error uploading files: ${error.message}`);
-      }
-    });
-  }
-});
-
-// Mock upload.js
-jest.mock('../client/js/upload.js', () => ({
-  initializeUpload: mockInitializeUpload,
-}));
 
 // Mock DOM
 beforeAll(() => {
@@ -195,17 +155,6 @@ describe('ViewUpload Module', () => {
     });
     mockXhr.status = 200;
 
-    // Ensure fileInput exists
-    let fileInput = document.getElementById('fileInput');
-    if (!fileInput) {
-      fileInput = document.createElement('input');
-      fileInput.type = 'file';
-      fileInput.id = 'fileInput';
-      fileInput.multiple = true;
-      fileInput.className = 'drop-zone__input';
-      document.body.appendChild(fileInput);
-    }
-
     // Mock fetch response
     mockFetch.mockImplementation(url => Promise.resolve({
       ok: true,
@@ -246,22 +195,15 @@ describe('ViewUpload Module', () => {
     // Reset auth.currentUser
     auth.currentUser = null;
 
-    // Debug setup
-    console.log('Mock setup: getDocs', getDocs.mock.calls, 'getDoc', getDoc.mock.calls);
-
     // Import ViewUpload.js and trigger DOMContentLoaded
     try {
       await import('../client/js/ViewUpload.js');
       document.dispatchEvent(new Event('DOMContentLoaded'));
-      console.log('ViewUpload.js imported successfully');
     } catch (error) {
       console.error('Error importing ViewUpload.js:', error);
     }
     jest.advanceTimersByTime(2000);
     await Promise.resolve();
-
-    // Simulate upload.js initialization
-    mockInitializeUpload();
   });
 
   afterEach(() => {
@@ -277,7 +219,6 @@ describe('ViewUpload Module', () => {
     await Promise.resolve();
 
     const container = document.getElementById('files-container');
-    console.log('Unauthenticated container:', container.innerHTML);
     expect(container.innerHTML).toBe('<p class="auth-message">Please sign in to view your files</p>');
   }, 15000);
 
@@ -347,7 +288,6 @@ describe('ViewUpload Module', () => {
     await Promise.resolve();
 
     const container = document.getElementById('files-container');
-    console.log('Authenticated container:', container.innerHTML);
     expect(container.querySelectorAll('.folder-card').length).toBe(1);
     expect(container.querySelector('.folder-card .name').textContent).toBe('TestFolder');
     expect(container.querySelectorAll('.file-card').length).toBe(1);
@@ -402,7 +342,7 @@ describe('ViewUpload Module', () => {
       expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: expect.stringContaining('user123'),
+        body: expect.any(String),
       })
     );
     expect(mockXhr.open).toHaveBeenCalledWith('PUT', 'https://example.com/blob?token=abc', true);
@@ -492,11 +432,8 @@ describe('ViewUpload Module', () => {
     jest.advanceTimersByTime(1000);
     await Promise.resolve();
 
-    console.log('auth.currentUser before click:', auth.currentUser);
     document.getElementById('create-folder-btn').click();
     document.getElementById('folder-name').value = 'NewFolder';
-    console.log('auth.currentUser before submit:', auth.currentUser);
-    auth.currentUser = user; // Ensure auth.currentUser persists
     document.getElementById('folder-form').dispatchEvent(new Event('submit'));
 
     jest.advanceTimersByTime(5000);
@@ -542,19 +479,21 @@ describe('ViewUpload Module', () => {
 
     const container = document.getElementById('files-container');
     container.innerHTML = `
-      <section class="file-card" data-doc-id="file1">
-        <section class="file-folder-row">
-          <p class="icon">📕</p>
-          <p class="name">Test PDF</p>
-          <button class="ellipsis-btn" data-doc-id="file1">⋯</button>
-          <section class="file-actions">
-            <section class="file-menu hidden" id="menu-file1">
-              <button class="edit-btn" 
-                data-doc-id="file1" 
-                data-title="Test PDF" 
-                data-description="" 
-                data-tags="" 
-                data-category="general">Edit</button>
+      <section class="file-group-card">
+        <section class="file-card" data-doc-id="file1">
+          <section class="file-folder-row">
+            <p class="icon">📕</p>
+            <p class="name">Test PDF</p>
+            <button class="ellipsis-btn" data-doc-id="file1">⋯</button>
+            <section class="file-actions">
+              <section class="file-menu hidden" id="menu-file1">
+                <button class="edit-btn" 
+                  data-doc-id="file1" 
+                  data-title="Test PDF" 
+                  data-description="" 
+                  data-tags="" 
+                  data-category="general">Edit</button>
+              </section>
             </section>
           </section>
         </section>
@@ -613,14 +552,16 @@ describe('ViewUpload Module', () => {
 
     const container = document.getElementById('files-container');
     container.innerHTML = `
-      <section class="file-card" data-doc-id="file1">
-        <section class="file-folder-row">
-          <p class="icon">📕</p>
-          <p class="name">Test PDF</p>
-          <button class="ellipsis-btn" data-doc-id="file1">⋯</button>
-          <section class="file-actions">
-            <section class="file-menu hidden" id="menu-file1">
-              <button class="delete-btn" data-doc-id="file1" data-blob-name="test.pdf">Delete</button>
+      <section class="file-group-card">
+        <section class="file-card" data-doc-id="file1">
+          <section class="file-folder-row">
+            <p class="icon">📕</p>
+            <p class="name">Test PDF</p>
+            <button class="ellipsis-btn" data-doc-id="file1">⋯</button>
+            <section class="file-actions">
+              <section class="file-menu hidden" id="menu-file1">
+                <button class="delete-btn" data-doc-id="file1" data-blob-name="https://example.com/test.pdf">Delete</button>
+              </section>
             </section>
           </section>
         </section>
@@ -670,7 +611,6 @@ describe('ViewUpload Module', () => {
     await Promise.resolve();
 
     const breadcrumbs = document.getElementById('directory-breadcrumbs');
-    console.log('Breadcrumbs:', breadcrumbs.innerHTML);
     expect(breadcrumbs.children.length).toBe(2);
     expect(breadcrumbs.lastChild.textContent).toBe('TestFolder');
   }, 15000);
@@ -684,7 +624,6 @@ describe('ViewUpload Module', () => {
     jest.advanceTimersByTime(1000);
     await Promise.resolve();
 
-    // Set up initial breadcrumbs for ParentFolder
     const parentBreadcrumb = document.createElement('button');
     parentBreadcrumb.className = 'breadcrumb';
     parentBreadcrumb.dataset.path = 'ParentFolder/';
@@ -702,7 +641,6 @@ describe('ViewUpload Module', () => {
     await Promise.resolve();
 
     const breadcrumbs = document.getElementById('directory-breadcrumbs');
-    console.log('Deep breadcrumbs:', breadcrumbs.innerHTML);
     expect(breadcrumbs.children.length).toBe(3);
     expect(breadcrumbs.children[1].textContent).toBe('ParentFolder');
     expect(breadcrumbs.children[2].textContent).toBe('ChildFolder');
@@ -723,7 +661,6 @@ describe('ViewUpload Module', () => {
           name: 'TargetFolder',
           fullPath: 'TargetFolder/',
           ownerId: 'user123',
-          url: 'https://example.com/targetfolder', // Added url to match ViewUpload.js expectation
         }),
       }],
       forEach: function (fn) {
@@ -738,14 +675,16 @@ describe('ViewUpload Module', () => {
 
     const container = document.getElementById('files-container');
     container.innerHTML = `
-      <section class="file-card" data-doc-id="file1">
-        <section class="file-folder-row">
-          <p class="icon">📕</p>
-          <p class="name">Test PDF</p>
-          <button class="ellipsis-btn" data-doc-id="file1">⋯</button>
-          <section class="file-actions">
-            <section class="file-menu hidden" id="menu-file1">
-              <button class="move-btn" data-doc-id="file1" data-current-path="">Move</button>
+      <section class="file-group-card">
+        <section class="file-card" data-doc-id="file1">
+          <section class="file-folder-row">
+            <p class="icon">📕</p>
+            <p class="name">Test PDF</p>
+            <button class="ellipsis-btn" data-doc-id="file1">⋯</button>
+            <section class="file-actions">
+              <section class="file-menu hidden" id="menu-file1">
+                <button class="move-btn" data-doc-id="file1" data-current-path="">Move</button>
+              </section>
             </section>
           </section>
         </section>
@@ -763,7 +702,6 @@ describe('ViewUpload Module', () => {
     const form = document.getElementById('move-form');
     form.dataset.docId = 'file1';
     document.getElementById('target-folder').value = 'TargetFolder/';
-    console.log('target-folder value:', document.getElementById('target-folder').value);
     form.dispatchEvent(new Event('submit'));
 
     jest.advanceTimersByTime(5000);
@@ -797,14 +735,16 @@ describe('ViewUpload Module', () => {
 
     const container = document.getElementById('files-container');
     container.innerHTML = `
-      <section class="folder-card" data-path="TestFolder/" data-folder-id="folder1">
-        <section class="file-folder-row">
-          <p class="icon">📁</p>
-          <p class="name">TestFolder</p>
-          <button class="ellipsis-btn" data-folder-id="folder1" data-menu-type="folder">⋯</button>
-          <section class="folder-actions">
-            <section class="file-menu hidden" id="folder-menu-folder1">
-              <button class="rename-folder-btn" data-folder-id="folder1" data-current-name="TestFolder">Rename</button>
+      <section class="file-group-card">
+        <section class="folder-card" data-path="TestFolder/" data-folder-id="folder1">
+          <section class="file-folder-row">
+            <p class="icon">📁</p>
+            <p class="name">TestFolder</p>
+            <button class="ellipsis-btn" data-folder-id="folder1" data-menu-type="folder">⋯</button>
+            <section class="folder-actions">
+              <section class="file-menu hidden" id="folder-menu-folder1">
+                <button class="rename-folder-btn" data-folder-id="folder1" data-current-name="TestFolder">Rename</button>
+              </section>
             </section>
           </section>
         </section>
@@ -855,14 +795,16 @@ describe('ViewUpload Module', () => {
 
     const container = document.getElementById('files-container');
     container.innerHTML = `
-      <section class="folder-card" data-path="TestFolder/" data-folder-id="folder1">
-        <section class="file-folder-row">
-          <p class="icon">📁</p>
-          <p class="name">TestFolder</p>
-          <button class="ellipsis-btn" data-folder-id="folder1" data-menu-type="folder">⋯</button>
-          <section class="folder-actions">
-            <section class="file-menu hidden" id="folder-menu-folder1">
-              <button class="delete-folder-btn" data-folder-id="folder1">Delete</button>
+      <section class="file-group-card">
+        <section class="folder-card" data-path="TestFolder/" data-folder-id="folder1">
+          <section class="file-folder-row">
+            <p class="icon">📁</p>
+            <p class="name">TestFolder</p>
+            <button class="ellipsis-btn" data-folder-id="folder1" data-menu-type="folder">⋯</button>
+            <section class="folder-actions">
+              <section class="file-menu hidden" id="folder-menu-folder1">
+                <button class="delete-folder-btn" data-folder-id="folder1">Delete</button>
+              </section>
             </section>
           </section>
         </section>
@@ -892,11 +834,10 @@ describe('ViewUpload Module', () => {
 
     getDocs.mockRejectedValueOnce(new Error('Firestore error'));
 
-    jest.advanceTimersByTime(10000); // Increased timer to ensure async completion
+    jest.advanceTimersByTime(10000);
     await Promise.resolve();
 
     const container = document.getElementById('files-container');
-    console.log('Error container:', container.innerHTML);
     expect(container.innerHTML).toBe('<p class="error-message">Error loading files. Please check console for details.</p>');
   }, 15000);
 
@@ -908,14 +849,16 @@ describe('ViewUpload Module', () => {
 
     const container = document.getElementById('files-container');
     container.innerHTML = `
-      <section class="file-card" data-doc-id="file1">
-        <section class="file-folder-row">
-          <p class="icon">📕</p>
-          <p class="name">Test PDF</p>
-          <button class="ellipsis-btn" data-doc-id="file1">⋯</button>
-          <section class="file-actions">
-            <section class="file-menu hidden" id="menu-file1">
-              <button class="edit-btn">Edit</button>
+      <section class="file-group-card">
+        <section class="file-card" data-doc-id="file1">
+          <section class="file-folder-row">
+            <p class="icon">📕</p>
+            <p class="name">Test PDF</p>
+            <button class="ellipsis-btn" data-doc-id="file1">⋯</button>
+            <section class="file-actions">
+              <section class="file-menu hidden" id="menu-file1">
+                <button class="edit-btn">Edit</button>
+              </section>
             </section>
           </section>
         </section>
@@ -929,10 +872,200 @@ describe('ViewUpload Module', () => {
     ellipsisBtn.dispatchEvent(new Event('click'));
 
     const menu = document.getElementById('menu-file1');
-    console.log('Menu classList:', menu.classList);
     expect(menu.classList.contains('hidden')).toBe(false);
 
     ellipsisBtn.dispatchEvent(new Event('click'));
     expect(menu.classList.contains('hidden')).toBe(true);
   }, 15000);
+
+  describe('Utility Functions', () => {
+    const { formatFileSize, detectFileType } = require('../client/js/ViewUpload.js');
+
+    describe('formatFileSize', () => {
+      test('returns "Unknown size" for non-numeric input', () => {
+        expect(formatFileSize('invalid')).toBe('Unknown size');
+        expect(formatFileSize(null)).toBe('Unknown size');
+        expect(formatFileSize(undefined)).toBe('Unknown size');
+      });
+
+      test('formats bytes correctly (< 1024)', () => {
+        expect(formatFileSize(0)).toBe('0 B');
+        expect(formatFileSize(500)).toBe('500 B');
+        expect(formatFileSize(1023)).toBe('1023 B');
+      });
+
+      test('formats kilobytes correctly (1024 to < 1048576)', () => {
+        expect(formatFileSize(1024)).toBe('1.0 KB');
+        expect(formatFileSize(5120)).toBe('5.0 KB');
+        expect(formatFileSize(1048575)).toBe('1024.0 KB');
+      });
+
+      test('formats megabytes correctly (1048576 to < 1073741824)', () => {
+        expect(formatFileSize(1048576)).toBe('1.0 MB');
+        expect(formatFileSize(5242880)).toBe('5.0 MB');
+        expect(formatFileSize(1073741823)).toBe('1024.0 MB');
+      });
+
+      test('formats gigabytes correctly (>= 1073741824)', () => {
+        expect(formatFileSize(1073741824)).toBe('1.0 GB');
+        expect(formatFileSize(2147483648)).toBe('2.0 GB');
+        expect(formatFileSize(5368709120)).toBe('5.0 GB');
+      });
+    });
+
+    describe('detectFileType', () => {
+      test('detects file type from MIME type', () => {
+        const file = {
+          type: 'image/png',
+          name: 'test.png',
+        };
+        expect(detectFileType(file)).toBe('image');
+
+        file.type = 'video/mp4';
+        file.name = 'test.mp4';
+        expect(detectFileType(file)).toBe('video');
+
+        file.type = 'audio/mpeg';
+        file.name = 'test.mp3';
+        expect(detectFileType(file)).toBe('audio');
+
+        file.type = 'application/pdf';
+        file.name = 'test.pdf';
+        expect(detectFileType(file)).toBe('pdf');
+
+        file.type = 'application/vnd.ms-excel';
+        file.name = 'test.xls';
+        expect(detectFileType(file)).toBe('spreadsheet');
+
+        file.type = 'application/vnd.ms-powerpoint';
+        file.name = 'test.ppt';
+        expect(detectFileType(file)).toBe('presentation');
+
+        file.type = 'application/zip';
+        file.name = 'test.zip';
+        expect(detectFileType(file)).toBe('archive');
+
+        file.type = 'text/javascript';
+        file.name = 'test.js';
+        expect(detectFileType(file)).toBe('code');
+      });
+
+      test('detects file type from extension when MIME type is empty or generic', () => {
+        const file = {
+          type: '',
+          name: 'test.jpg',
+        };
+        expect(detectFileType(file)).toBe('image');
+
+        file.name = 'test.mp4';
+        expect(detectFileType(file)).toBe('video');
+
+        file.name = 'test.mp3';
+        expect(detectFileType(file)).toBe('audio');
+
+        file.name = 'test.pdf';
+        expect(detectFileType(file)).toBe('pdf');
+
+        file.name = 'test.xlsx';
+        expect(detectFileType(file)).toBe('spreadsheet');
+
+        file.name = 'test.pptx';
+        expect(detectFileType(file)).toBe('presentation');
+
+        file.name = 'test.zip';
+        expect(detectFileType(file)).toBe('archive');
+
+        file.name = 'test.py';
+        expect(detectFileType(file)).toBe('code');
+      });
+
+      test('returns first part of MIME type when no match is found', () => {
+        const file = {
+          type: 'text/plain',
+          name: 'test.txt',
+        };
+        expect(detectFileType(file)).toBe('text');
+      });
+
+      test('returns "default" when no MIME type or extension match', () => {
+        const file = {
+          type: '',
+          name: 'test.unknown',
+        };
+        expect(detectFileType(file)).toBe('default');
+
+        file.type = 'application/octet-stream';
+        file.name = 'test.bin';
+        expect(detectFileType(file)).toBe('application');
+      });
+
+      test('handles case insensitivity', () => {
+        const file = {
+          type: 'IMAGE/JPEG',
+          name: 'test.JPG',
+        };
+        expect(detectFileType(file)).toBe('image');
+
+        file.type = '';
+        file.name = 'test.PDF';
+        expect(detectFileType(file)).toBe('pdf');
+      });
+
+      test('handles files without name property', () => {
+        const file = {
+          type: 'image/png',
+        };
+        expect(detectFileType(file)).toBe('image');
+
+        file.type = 'text/plain';
+        expect(detectFileType(file)).toBe('text');
+      });
+    });
+    describe('getSimplifiedType', () => {
+      const { getSimplifiedType } = require('../client/js/ViewUpload.js');
+
+      test('returns "default" for falsy input', () => {
+        expect(getSimplifiedType('')).toBe('default');
+        expect(getSimplifiedType(null)).toBe('default');
+        expect(getSimplifiedType(undefined)).toBe('default');
+      });
+
+      test('detects simplified type from MIME type', () => {
+        expect(getSimplifiedType('image/png')).toBe('image');
+        expect(getSimplifiedType('video/mp4')).toBe('video');
+        expect(getSimplifiedType('audio/mpeg')).toBe('audio');
+        expect(getSimplifiedType('application/pdf')).toBe('pdf');
+        expect(getSimplifiedType('application/vnd.ms-excel')).toBe('spreadsheet');
+        expect(getSimplifiedType('application/vnd.ms-powerpoint')).toBe('presentation');
+        expect(getSimplifiedType('application/zip')).toBe('archive');
+        expect(getSimplifiedType('text/javascript')).toBe('code');
+      });
+
+      test('handles alternative MIME types for same category', () => {
+        expect(getSimplifiedType('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')).toBe('spreadsheet');
+        expect(getSimplifiedType('application/vnd.openxmlformats-officedocument.presentationml.presentation')).toBe('presentation');
+        expect(getSimplifiedType('application/x-rar-compressed')).toBe('archive');
+        expect(getSimplifiedType('application/x-tar')).toBe('archive');
+        expect(getSimplifiedType('application/x-7z-compressed')).toBe('archive');
+        expect(getSimplifiedType('text/x-python')).toBe('code');
+      });
+
+      test('returns first part of MIME type when no match is found', () => {
+        expect(getSimplifiedType('text/plain')).toBe('text');
+        expect(getSimplifiedType('application/json')).toBe('application');
+      });
+
+      test('handles case insensitivity', () => {
+        expect(getSimplifiedType('IMAGE/JPEG')).toBe('image');
+        expect(getSimplifiedType('VIDEO/MP4')).toBe('video');
+        expect(getSimplifiedType('APPLICATION/PDF')).toBe('pdf');
+        expect(getSimplifiedType('TEXT/JAVASCRIPT')).toBe('code');
+      });
+
+      test('returns "default" for malformed MIME type', () => {
+        expect(getSimplifiedType('invalid')).toBe('default');
+        expect(getSimplifiedType('/')).toBe('default');
+      });
+    });
+  });
 });

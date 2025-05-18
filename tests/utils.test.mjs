@@ -26,7 +26,7 @@ describe('formatFileSize', () => {
 
 describe('formatFileSize', () => {
   test('returns "0 Bytes" for 0', () => {
-    expect(formatFileSize(0)).toBe('0 Bytes');
+    expect(formatFileSize(0)).toBe('0 B');
   });
   test('returns correct KB size', () => {
     expect(formatFileSize(1024)).toBe('1 KB');

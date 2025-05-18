@@ -46,7 +46,7 @@ fileInput.style.display = 'none';
 document.body.appendChild(fileInput);
 
 // Utility functions
-function formatFileSize(bytes) {
+export function formatFileSize(bytes) {
   if (typeof bytes !== 'number') return 'Unknown size';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -54,7 +54,7 @@ function formatFileSize(bytes) {
   return `${(bytes / 1073741824).toFixed(1)} GB`;
 }
 
-function detectFileType(file) {
+export function detectFileType(file) {
   const type = file.type ? file.type.toLowerCase() : '';
   if (type.includes('image')) return 'image';
   if (type.includes('video')) return 'video';
@@ -82,7 +82,7 @@ function getFileIcon(type) {
   return fileIcons[type] || fileIcons.default;
 }
 
-function formatDate(date) {
+export function formatDate(date) {
   if (!date) return 'Unknown date';
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -91,7 +91,7 @@ function formatDate(date) {
   });
 }
 
-function getSimplifiedType(fileType) {
+export function getSimplifiedType(fileType) {
   if (!fileType) return 'default';
   const type = fileType.toLowerCase();
   if (type.includes('image')) return 'image';
