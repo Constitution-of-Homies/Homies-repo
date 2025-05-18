@@ -1,7 +1,15 @@
+:root {
+    --primary-color: #606060;
+    --secondary-color: #d9d9d9;
+    --accent-color: #8c8c8c;
+    --hover-color: #737373;
+    --text-color: #f0f0f0;
+}
+
 * {
     padding: 0;
     margin: 0;
-    font-family: 'Segoe-UI', sans-serif;
+    box-sizing: border-box
 }
 
 
@@ -10,7 +18,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    color: var(--secondary-color);
+    background-color: var(--secondary-color);
 }
 
 header {
@@ -18,7 +26,28 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.logo {
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    white-space: nowrap;
+}
+
+.logo-img {
+    width: 45px;
+    height: 30px;
+    object-fit: contain;
+}
+
+.logo-text {
+    font-family: 'Courier New', monospace;
+    font-weight: 400;
+    font-size: 1.4rem;
+    
 }
 
 header h1 {
@@ -41,12 +70,11 @@ header h1 {
 }
 
 #back-btn:hover {
-    background-color: rgba(74, 126, 173, 0.966);
+    background-color: var(--hover-color);
 }
 
 main {
     padding: 40px;
-    /* align-items: center; */
   }
   
   main.analytics-dashboard {
@@ -60,14 +88,13 @@ main {
 main.analytics-dashboard h2 {
     font-size: 1.8rem;
     margin-bottom: 2rem;
-    color: var(--primary-color);
+    color: black;
     border-bottom: 0.1px solid rgb(194, 194, 194);
     padding-bottom: 0.5rem;
 }
   .key-metrics h2 {
     font-size: 2rem;
     margin-bottom: 30px;
-    color: #1a1a1a;
   }
   
   .metrics-grid {
@@ -78,10 +105,10 @@ main.analytics-dashboard h2 {
   }
   
   .metric {
-    background: white;
+    background: var(--text-color);
     border-radius: 12px;
     padding: 20px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.247);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
   
@@ -93,7 +120,7 @@ main.analytics-dashboard h2 {
   .metric h3 {
     font-size: 1.1rem;
     margin-bottom: 10px;
-    color: #666;
+    color: var(--primary-color);
   }
   
   .metric p {
@@ -109,14 +136,6 @@ main.analytics-dashboard h2 {
     padding: 30px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
   } */
-  
-  footer {
-    text-align: center;
-    padding: 1rem;
-    background-color: #ccc;;
-    color: var(--primary-color);
-    margin-top: auto;
-}
 
 /* responsive design lit stuff */
 

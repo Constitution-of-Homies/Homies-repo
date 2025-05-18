@@ -40,12 +40,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function updateProfileSection(user, userData) {
     const profileImage = document.querySelector('.profile-image');
-    const profileName = document.querySelector('.profile-info h3');
+    const profileName = document.getElementById('profile-name');
     
     if (userData?.photoURL || user.photoURL) {
         profileImage.src = userData?.photoURL || user.photoURL;
     }
-    profileName.textContent = userData?.displayName || user.displayName || "User";
+    profileName.textContent = userData?.username || user?.displayName || "User";
 }
 
 function setupEditProfile(user, userData) {
@@ -58,7 +58,7 @@ function setupEditProfile(user, userData) {
     // Open drawer
     editBtn.addEventListener('click', () => {
         // Populate form with current data
-        document.getElementById('name').value = userData?.displayName || user.displayName || "";
+        document.getElementById('name').value = userData?.username || user?.displayName || "";
         document.getElementById('email').value = user.email || "";
         
         drawer.classList.remove('hidden');
@@ -81,9 +81,7 @@ function setupEditProfile(user, userData) {
         try {
             const updatedData = {
                 displayName: document.getElementById('name').value,
-                title: document.getElementById('bio').value,
-                location: document.getElementById('city-town').value,
-                phoneNumber: document.getElementById('phone').value
+                email: document.getElementById('email').value
             };
             
             // Update in Firestore

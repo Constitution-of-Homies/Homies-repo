@@ -15,6 +15,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
 import { auth, db } from "./firebase.js";
+import { setUploadPath } from './upload.js';
 
 // File type icons
 const fileIcons = {
@@ -62,7 +63,7 @@ function detectFileType(file) {
   if (type.includes('spreadsheet') || type.includes('excel')) return 'spreadsheet';
   if (type.includes('presentation') || type.includes('powerpoint')) return 'presentation';
   if (type.includes('zip') || type.includes('rar') || type.includes('tar') || type.includes('7z')) return 'archive';
-  if (type.includes('text') || type.includes('javascript') || type.includes('python') || type.includes('java') || type.includes('html') || type.includes('css')) return 'code';
+  if (type.includes('javascript') || type.includes('python') || type.includes('java') || type.includes('html') || type.includes('css')) return 'code';
   if (file.name) {
     const ext = file.name.split('.').pop().toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
@@ -72,7 +73,7 @@ function detectFileType(file) {
     if (['xls', 'xlsx', 'csv'].includes(ext)) return 'spreadsheet';
     if (['ppt', 'pptx'].includes(ext)) return 'presentation';
     if (['zip', 'rar', 'tar', 'gz', '7z'].includes(ext)) return 'archive';
-    if (['txt', 'js', 'py', 'java', 'html', 'css', 'json'].includes(ext)) return 'code';
+    if (['js', 'py', 'java', 'html', 'css', 'json'].includes(ext)) return 'code';
   }
   return type.split('/')[0] || 'default';
 }
@@ -100,7 +101,7 @@ function getSimplifiedType(fileType) {
   if (type.includes('spreadsheet') || type.includes('excel')) return 'spreadsheet';
   if (type.includes('presentation') || type.includes('powerpoint')) return 'presentation';
   if (type.includes('zip') || type.includes('rar') || type.includes('tar') || type.includes('7z')) return 'archive';
-  if (type.includes('text') || type.includes('javascript') || type.includes('python') || type.includes('java') || type.includes('html') || type.includes('css')) return 'code';
+  if (type.includes('javascript') || type.includes('python') || type.includes('java') || type.includes('html') || type.includes('css')) return 'code';
   return type.split('/')[0] || 'default';
 }
 
@@ -123,9 +124,70 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+window.addEventListener('filesUploaded', () => {
+  const user = auth.currentUser;
+  if (user) {
+    displayFiles(user.uid);
+  }
+});
+
 function setupEventListeners(userId) {
   // Event delegation for edit, delete, and folder navigation
   document.addEventListener('click', async (e) => {
+    // Close all menus if click is outside
+  if (!e.target.closest('.file-actions')) {
+    document.querySelectorAll('.file-menu').forEach(menu => menu.classList.add('hidden'));
+  }
+
+  // Toggle specific menu
+  if (e.target.classList.contains('ellipsis-btn')) {
+    e.stopPropagation(); // prevent auto-close
+    const docId = e.target.dataset.docId;
+    const menu = document.getElementById(`menu-${docId}`);
+    if (menu) {
+      menu.classList.toggle('hidden');
+    }
+  }
+
+  if (e.target.classList.contains('ellipsis-btn')) {
+    e.stopPropagation();
+    const isFolder = e.target.dataset.menuType === 'folder';
+    const id = isFolder ? e.target.dataset.folderId : e.target.dataset.docId;
+    const menuId = isFolder ? `folder-menu-${id}` : `menu-${id}`;
+    const menu = document.getElementById(menuId);
+  
+    if (menu) {
+      // Close all others first
+      document.querySelectorAll('.file-menu').forEach(m => m.classList.add('hidden'));
+      menu.classList.remove('hidden');
+  
+      // Lock state to prevent premature hide
+      let inside = true;
+  
+      // When mouse enters, set inside = true
+      menu.addEventListener('pointerenter', () => {
+        inside = true;
+      });
+  
+      // When mouse leaves, set inside = false
+      menu.addEventListener('pointerleave', () => {
+        inside = false;
+        setTimeout(() => {
+          if (!inside) menu.classList.add('hidden');
+        }, 150); // short delay to allow moving between button and menu
+      });
+  
+      // Also check button
+      e.target.addEventListener('pointerleave', () => {
+        setTimeout(() => {
+          if (!inside) menu.classList.add('hidden');
+        }, 150);
+      });
+    }
+  
+    return;
+  }
+  
     if (e.target.classList.contains('edit-btn')) {
         const docId = e.target.dataset.docId;
         const title = e.target.dataset.title || 'Untitled';
@@ -186,7 +248,8 @@ function setupEventListeners(userId) {
   const uploadFileBtn = document.getElementById('upload-file-btn');
   if (uploadFileBtn) {
     uploadFileBtn.addEventListener('click', () => {
-      fileInput.click();
+      setUploadPath(currentPath); // <-- pass in the current folder path
+      document.getElementById('upload-modal').style.display = 'flex';
     });
   }
 
@@ -327,6 +390,17 @@ async function displayFiles(userId) {
       return;
     }
 
+    const groupCard = document.createElement('section');
+    groupCard.className = 'file-group-card';
+    groupCard.style.background = 'white';
+    groupCard.style.borderRadius = '8px';
+    groupCard.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+    groupCard.style.padding = '1rem';
+    groupCard.style.marginBottom = '1.5rem';
+    groupCard.style.display = 'flex';
+    groupCard.style.flexDirection = 'column';
+    groupCard.style.gap = '0';
+
     // Display folders first
     foldersSnapshot.forEach((doc) => {
       const folder = doc.data();
@@ -334,22 +408,23 @@ async function displayFiles(userId) {
       folderCard.className = 'folder-card';
       folderCard.dataset.path = folder.fullPath;
       folderCard.innerHTML = `
-        <section class="folder-icon">${fileIcons.folder}</section>
-        <section class="folder-details">
-          <h3>${folder.name}</h3>
-          <section class="folder-meta">
-            <p>Folder</p>
-            <p>Created: ${formatDate(folder.createdAt?.toDate())}</p>
-          </section>
+        <section class="file-folder-row">
+          <P class="icon">${fileIcons.folder}</P>
+          <P class="name">${folder.name}</P>
+          <p class="created">${formatDate(folder.createdAt?.toDate())}</p>
+          <p class="size">${formatFileSize(folder.size)}</p>
+          <button class="ellipsis-btn" data-folder-id="${doc.id}" data-menu-type="folder">⋯</button>
+
           <section class="folder-actions">
-            <button class="rename-folder-btn" 
-              data-folder-id="${doc.id}"
-              data-current-name="${folder.name}">Rename</button>
-            <button class="delete-folder-btn" data-folder-id="${doc.id}">Delete</button>
+            <section class="file-menu hidden" id="folder-menu-${doc.id}">
+              <button class="rename-folder-btn" data-folder-id="${doc.id}" data-current-name="${folder.name}">Rename</button>
+              <button class="delete-folder-btn" data-folder-id="${doc.id}">Delete</button>
+          </section>
           </section>
         </section>
       `;
-      container.appendChild(folderCard);
+    
+      groupCard.appendChild(folderCard);
     });
 
     // Then display files
@@ -372,35 +447,41 @@ async function displayFiles(userId) {
         const card = document.createElement('section');
         card.className = 'file-card';
         card.innerHTML = `
-          <section class="file-icon">${fileIcon}</section>
-          <section class="file-details">
-            <h3>${file.metadata?.title || file.name || 'Untitled'}</h3>
-            <p class="file-description">${file.metadata?.description || ''}</p>
-            <section class="file-meta">
-              <p>${formatFileSize(file.size)}</p>
-              <p>${formatDate(file.uploadedAt?.toDate())}</p>
-            </section>
-            <section class="file-actions">
-              <a href="${file.url}" class="view-btn" target="_blank" rel="noopener noreferrer">View</a>
-              <a href="${file.url}" class="download-btn" download="${file.name || 'download'}">Download</a>
-              <button class="edit-btn" 
-                data-doc-id="${doc.id}" 
-                data-title="${file.metadata?.title || file.name || 'Untitled'}" 
-                data-description="${file.metadata?.description || ''}"
-                data-tags="${file.metadata?.tags?.join(', ') || ''}"
-                data-category="${file.metadata?.category || 'general'}">Edit</button>
-              <button class="move-btn" 
-                data-doc-id="${doc.id}"
-                data-current-path="${file.path || ''}">Move</button>
-              <button class="delete-btn" data-doc-id="${doc.id}" data-blob-name="${file.url}">Delete</button>
+            <section class="file-folder-row">
+              <p class="icon">${fileIcon}</p>
+              <p class="name">${file.metadata?.title || file.name || 'Untitled'}</p>
+              <p class="created">${formatDate(file.uploadedAt?.toDate())}</p>
+              <p class="size">${formatFileSize(file.size)}</p>
+              <button class="ellipsis-btn" data-doc-id="${doc.id}">⋯</button>
+          
+              <section class="file-actions">
+              <section class="file-menu hidden" id="menu-${doc.id}">
+                <a href="${file.url}" target="_blank">View</a>
+                <a href="${file.url}" download="${file.name || 'download'}">Download</a>
+                <button class="edit-btn" 
+                  data-doc-id="${doc.id}" 
+                  data-title="${file.metadata?.title || file.name || 'Untitled'}"
+                  data-description="${file.metadata?.description || ''}"
+                  data-tags="${file.metadata?.tags?.join(', ') || ''}"
+                  data-category="${file.metadata?.category || 'general'}">Edit</button>
+                <button class="move-btn" 
+                  data-doc-id="${doc.id}"
+                  data-current-path="${file.path || ''}">Move</button>
+                <button class="delete-btn" data-doc-id="${doc.id}" data-blob-name="${file.url}">Delete</button>
+              </section>
             </section>
           </section>
         `;
-        container.appendChild(card);
+        groupCard.appendChild(card);
       }).catch(error => {
         console.error("Error testing URL:", error);
       });
     });
+
+    
+
+
+    container.appendChild(groupCard);
 
   } catch (error) {
     console.error("Error loading files:", error);
