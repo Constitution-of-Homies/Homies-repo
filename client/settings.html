@@ -9,7 +9,10 @@
 </head>
 <body>
     <header>
-        <h1>Scriptorium<img src="images/scriptorium.png" width="50" height="18"></h1>
+        <section class="logo">
+            <img src="./images/scriptorium.png" alt="Scriptorium Logo" class="logo-img">
+            <p class="logo-text">Scriptorium</p>
+        </section>
         <button id="back-btn">
             <img src="images/icons/back-btn.png" width="18" height="18"> Back
         </button>
@@ -32,7 +35,7 @@
         
         <section class="notifications">
             <h3>Notifications</h3>
-            <p>Enable notifications for uploads, downloads, and comments</p>
+            <p>Enable notifications for uploads and downloads</p>
             <label class="toggle-switch">
                 <input type="checkbox" id="email-notify-toggle">
                 <section class="slider"></section>
@@ -52,11 +55,8 @@
             <h4>Export Data</h4>
             <button id="export-data-btn"><img src="images/icons/download.png" width="18" height="18">Get Data</button>
         </section>
-        <button id="delete-acc-btn">Delete Account</button>
+        <button id="signout-btn">Sign Out</button>
     </main>
-    <footer>
-        <small>&copy; 2025 Scriptorium</small>
-    </footer>
-    <script src="js/settings.js"></script>
+    <script type="module" src="js/settings.js"></script>
 </body>
 </html>

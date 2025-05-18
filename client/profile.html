@@ -6,41 +6,63 @@
     <title>Scriptorium - Profile</title>
     <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="css/profile.css"/>
-    <!-- <link rel="stylesheet" href="css/footer.css" /> -->
+    <link rel="stylesheet" href="css/drawer.css"/>
 </head>
 <body>
-    <main class="dashboard-layout">
+    <nav>
+        <section class="logo">
+            <img src="./images/1x1-dark-feather.png" alt="Scriptorium Logo" class="logo-img">
+            <p class="logo-text">Scriptorium</p>
+        </section>
+
         <section class="side-menu">
-            <nav>
-                <h1><img src="images/scriptorium.png" width="45" height="20"> My Dashboard</h1>
+            <section class="nav-items">
                 <ul>
                     <li>
-                        <a href="index.html"><img src="images/icons/home.png" width="18" height="18">Home</a>
+                        <a href="index.html">
+                            <img src="./images/icons/home.png" alt="Home" class="nav-icon">
+                            <p class="nav-text">Home</p>
+                        </a>
                     </li>
                     <li>
-                        <a href="ViewUpload.html"><img src="images/icons/upload.png" width="18" height="18">My Uploads</a>
-                    </li>
-                    <!-- <li>
-                        <a href="#"><img src="images/icons/lock.png" width="18" height="18">Permissions</a>
-                    </li> -->
-                    <li>
-                        <a href="analytics.html"><img src="images/icons/chart.png" width="18" height="18">Analytics</a>
+                        <a href="ViewUpload.html">
+                            <img src="./images/icons/upload.png" alt="Uploads" class="nav-icon">
+                            <p class="nav-text">My Uploads</p>
+                        </a>
                     </li>
                     <li>
-                        <a href="settings.html"><img src="images/icons/settings.png" width="18" height="18">Settings</a>
+                        <a href="analytics.html">
+                            <img src="./images/icons/chart.png" alt="Analytics" class="nav-icon">
+                            <p class="nav-text">Analytics</p>
+                        </a>
                     </li>
-                    <!-- <li><a href="#"><img src="images/icons/support.png" width="18" height="18">Support</a></li>
-                    <li><a href="#"><img src="images/icons/faq.png" width="18" height="18">FAQ</a></li> -->
+                    <li>
+                        <a href="settings.html">
+                            <img src="./images/icons/settings.png" alt="Settings" class="nav-icon">
+                            <p class="nav-text">Settings</p>
+                        </a>
+                    </li>
                 </ul>
-            </nav>
-            <button id="sign-out-btn"><img src="images/icons/logout.png" width="20" height="20">Sign Out</button>
+            </section>
+
+            <section class="signout-container">
+                <button id="sign-out-btn">
+                    <img src="./images/icons/sign-out.png" alt="Signout" class="nav-icon">
+                    <p class="nav-text">Sign Out</p>
+                </button>
+            </section>
         </section>
+    </nav>
         
+    <main>
         <section class="main-section">
             <section class="profile-section">
-                <img src="images/icons/user.png" alt="Profile" class="profile-image" />
-                <section class="profile-info">
-                    <h3></h3>
+                <section class="profile-content">
+                    <img src="images/icons/user.png" alt="Profile" class="profile-image" />
+                    <section class="profile-info">
+                        <h3 id="profile-name"></h3>
+                        <p id="profile-bio"></p>
+                    </section>
                 </section>
                 <button id="edit-profile-btn">Edit</button>
             </section>
@@ -82,6 +104,11 @@
                         <input type="text" id="name">
                     </section>
 
+                    <!-- <section class="form-group">
+                        <label for="bio">Bio</label>
+                        <input type="text" id="bio">
+                    </section> -->
+
                     <section class="form-group">
                         <label for="email">Email</label>
                         <input type="email" id="email">
@@ -95,9 +122,6 @@
             </section>
         </section>
     </main>
-    <!-- <footer>
-        <small>&copy; 2025 Scriptorium</small>
-    </footer> -->
     <script type="module" src="js/profile.js"></script>
 </body>
 </html>
