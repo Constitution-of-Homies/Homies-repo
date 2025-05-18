@@ -232,6 +232,12 @@
   border-radius: 8px;
   transition: all 0.2s ease;
   cursor: pointer;
+  opacity: 0;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+    to { opacity: 1; }
 }
 
 .search-result-item:hover {

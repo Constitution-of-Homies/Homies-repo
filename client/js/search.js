@@ -1,8 +1,10 @@
-import { db } from "./firebase.js";
+import { db, auth } from "./firebase.js";
 import { 
     collection,
     query,
-    getDocs
+    getDocs,
+    doc,
+    getDoc
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
 let currentSearchTerm = '';
@@ -13,12 +15,12 @@ let currentFilters = {
     tags: ''
 };
 
-// Sorting of the sorting hehe
-let currentSort = 'title-asc'; // Default sort: title A-Z
+// Default sort: relevance (highest similarity)
+let currentSort = 'relevance';
 const sortOption = document.getElementById('sort-option');
 if (sortOption) {
     sortOption.addEventListener('change', () => {
-        currentSort = sortOption.value || 'title-asc';
+        currentSort = sortOption.value || 'relevance';
         if (window.currentSearchResults.length > 0) {
             const sortedResults = sortResults(window.currentSearchResults, currentSort);
             window.currentSearchResults = sortedResults;
@@ -43,57 +45,158 @@ async function performSearch() {
         tags: document.getElementById('filter-tags')?.value.toLowerCase() || ''
     };
 
-    currentSort = document.getElementById('sort-option')?.value || 'title-asc';
+    currentSort = document.getElementById('sort-option')?.value || 'relevance';
+    const useNLP = document.getElementById('nlp-toggle')?.checked || false;
+
+    if (!searchTerm) {
+        alert('Please enter a search term.');
+        return;
+    }
 
     try {
-        let q = query(collection(db, "archiveItems"));
+        // Show loading spinner
+        const resultsContainer = document.getElementById('search-results');
+        const searchContainer = document.querySelector('.search-results-container');
+        if (resultsContainer && searchContainer) {
+            resultsContainer.innerHTML = '<div class="loading-spinner"></div>';
+            searchContainer.style.display = 'block';
+        }
+
+        // Fetch documents from searchIndex
+        let q = query(collection(db, "searchIndex"));
         const querySnapshot = await getDocs(q);
         
         const allResults = [];
-        querySnapshot.forEach((doc) => {
-            const file = doc.data();
-            if (matchesSearchTerm(file, searchTerm) && matchesFilters(file)) {
-                allResults.push({ id: doc.id, ...file });
+        for (const searchDoc of querySnapshot.docs) {
+            const searchData = searchDoc.data();
+            // Get corresponding archiveItem for metadata
+            const archiveDoc = await getDoc(doc(db, "archiveItems", searchData.itemId));
+            if (!archiveDoc.exists()) continue;
+
+            const file = archiveDoc.data();
+            file.id = archiveDoc.id;
+            file.embeddings = searchData.embeddings || [];
+            file.contentSnippet = searchData.content 
+                ? searchData.content.substring(0, 100) + (searchData.content.length > 100 ? '...' : '') 
+                : 'No content available';
+
+            let relevanceScore = 0;
+            if (useNLP) {
+                // NLP-based search
+                const queryEmbeddings = await generateQueryEmbeddings(searchTerm);
+                relevanceScore = file.embeddings.length > 0 
+                    ? cosineSimilarity(queryEmbeddings, file.embeddings)
+                    : 0;
+            } else {
+                // Keyword-based search
+                relevanceScore = calculateKeywordMatch(searchTerm, searchData.content, file);
             }
-        });
+
+            if (matchesFilters(file) && relevanceScore > 0.1) { // Threshold for relevance
+                allResults.push({ ...file, similarity: relevanceScore });
+            }
+        }
         
-        // Sort results based on currentSort
+        // Sort results
         const sortedResults = sortResults(allResults, currentSort);
         window.currentSearchResults = sortedResults;
         displaySearchResults(sortedResults);
         
-        // Add search-active class to centered-content
+        // Add search-active class
         const centeredContent = document.querySelector('.centered-content');
         if (centeredContent) {
             centeredContent.classList.add('search-active');
         }
     } catch (error) {
         console.error("Search error:", error);
-        alert("Error performing search");
+        const resultsContainer = document.getElementById('search-results');
+        if (resultsContainer) {
+            resultsContainer.innerHTML = '<p>Error performing search</p>';
+        }
+        alert("Error performing search: " + error.message);
     }
 }
 
-function matchesSearchTerm(file, searchTerm) {
-    if (!searchTerm) return true;
-    const lowerSearchTerm = searchTerm.toLowerCase();
+// Calculate keyword match score
+function calculateKeywordMatch(searchTerm, content, file) {
+    if (!content || !searchTerm) return 0;
     
-    if (file.metadata?.title?.toLowerCase().includes(lowerSearchTerm)) {
-        return true;
+    const searchWords = searchTerm.toLowerCase().split(/\s+/);
+    const contentWords = content.toLowerCase();
+    const title = (file.metadata?.title || file.name || '').toLowerCase();
+    
+    let matchScore = 0;
+    
+    // Check matches in content
+    searchWords.forEach(word => {
+        if (contentWords.includes(word)) {
+            matchScore += 0.3; // Weight for content match
+        }
+    });
+    
+    // Check matches in title
+    searchWords.forEach(word => {
+        if (title.includes(word)) {
+            matchScore += 1; // Higher weight for title match
+        }
+    });
+    
+    // Check matches in tags
+    if (file.metadata?.tags) {
+        searchWords.forEach(word => {
+            if (file.metadata.tags.some(tag => tag.toLowerCase().includes(word))) {
+                matchScore += 1; // Weight for tag match
+            }
+        });
     }
     
-    if (file.metadata?.description?.toLowerCase().includes(lowerSearchTerm)) {
-        return true;
+    // Normalize score to 0-1 range
+    return Math.min(matchScore / (searchWords.length * 1.0), 1.0);
+}
+
+// Call the generateEmbeddings API
+async function generateQueryEmbeddings(text) {
+    try {
+        const response = await fetch('https://scriptorium.azurewebsites.net/api/generateEmbeddings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to generate embeddings');
+        }
+
+        const data = await response.json();
+        return data.embeddings || [];
+    } catch (error) {
+        console.error('Error generating query embeddings:', error);
+        throw error;
+    }
+}
+
+// Calculate cosine similarity
+function cosineSimilarity(vecA, vecB) {
+    if (!vecA.length || !vecB.length || vecA.length !== vecB.length) return 0;
+    
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+    
+    for (let i = 0; i < vecA.length; i++) {
+        dotProduct += vecA[i] * vecB[i];
+        normA += vecA[i] * vecA[i];
+        normB += vecB[i] * vecB[i];
     }
     
-    if (file.metadata?.tags?.some(tag => tag.toLowerCase().includes(lowerSearchTerm))) {
-        return true;
-    }
+    normA = Math.sqrt(normA);
+    normB = Math.sqrt(normB);
     
-    if (file.name?.toLowerCase().includes(lowerSearchTerm)) {
-        return true;
-    }
-    
-    return false;
+    if (normA === 0 || normB === 0) return 0;
+    return dotProduct / (normA * normB);
 }
 
 function matchesFilters(file) {
@@ -161,6 +264,8 @@ function isSameMonth(date1, date2) {
 function sortResults(results, sortOption) {
     return [...results].sort((a, b) => {
         switch (sortOption) {
+            case 'relevance':
+                return (b.similarity || 0) - (a.similarity || 0);
             case 'date-desc':
                 return (b.uploadedAt?.toDate() || new Date()) - (a.uploadedAt?.toDate() || new Date());
             case 'date-asc':
@@ -174,7 +279,7 @@ function sortResults(results, sortOption) {
             case 'size-desc':
                 return (b.size || 0) - (a.size || 0);
             default:
-                return 0;
+                return (b.similarity || 0) - (a.similarity || 0);
         }
     });
 }
@@ -207,10 +312,12 @@ function displaySearchResults(allResults) {
             <div class="search-result-details">
                 <h3>${file.metadata?.title || file.name || 'Untitled'}</h3>
                 ${file.uploadedBy ? `<p class="search-result-uploader">Uploaded by: ${file.uploadedByName || 'Anonymous'}</p>` : ''}
+                <p class="search-result-snippet">${file.contentSnippet}</p>
                 <p class="search-result-description">${file.metadata?.description || 'No description'}</p>
                 <div class="search-result-meta">
                     <span>${formatFileSize(file.size)}</span>
                     <span>${formatDate(file.uploadedAt?.toDate())}</span>
+                    <span>Relevance: ${(file.similarity * 100).toFixed(1)}%</span>
                 </div>
             </div>
             <div class="search-result-actions">
@@ -236,18 +343,20 @@ function clearSearchResults() {
     const filterDate = document.getElementById('filter-date');
     const filterTags = document.getElementById('filter-tags');
     const sortOption = document.getElementById('sort-option');
+    const nlpToggle = document.getElementById('nlp-toggle');
     if (filterType) filterType.value = '';
     if (filterCategory) filterCategory.value = '';
     if (filterDate) filterDate.value = '';
     if (filterTags) filterTags.value = '';
-    if (sortOption) sortOption.value = 'title-asc';
+    if (sortOption) sortOption.value = 'relevance';
+    if (nlpToggle) nlpToggle.checked = false;
     
     const searchContainer = document.querySelector('.search-results-container');
     const searchResults = document.getElementById('search-results');
     if (searchContainer) searchContainer.style.display = 'none';
     if (searchResults) searchResults.innerHTML = '';
     
-    // Remove search-active class from centered-content
+    // Remove search-active class
     const centeredContent = document.querySelector('.centered-content');
     if (centeredContent) {
         centeredContent.classList.remove('search-active');
@@ -260,7 +369,7 @@ function clearSearchResults() {
         date: '',
         tags: ''
     };
-    currentSort = 'title-asc';
+    currentSort = 'relevance';
     window.currentSearchResults = [];
 }
 
@@ -274,7 +383,7 @@ function getSimplifiedType(fileType) {
     if (type.includes('spreadsheet') || type.includes('excel')) return 'spreadsheet';
     if (type.includes('presentation') || type.includes('powerpoint')) return 'presentation';
     if (type.includes('zip') || type.includes('rar') || type.includes('tar') || type.includes('7z')) return 'archive';
-    if (type.includes('text') || type.includes('javascript') || type.includes('python') || type.includes('java') || type.includes('html') || type.includes('css')) return 'code';
+    if (type.includes('javascript') || type.includes('python') || type.includes('java') || type.includes('html') || type.includes('css')) return 'code';
     return type.split('/')[0] || 'default';
 }
 

@@ -59,6 +59,10 @@
                 </button>
             </section>
             <section class="filter-section">
+                <!-- <section class="nlp-toggle">
+                    <label for="nlp-toggle">Use NLP Search</label>
+                    <input type="checkbox" id="nlp-toggle" name="nlp-toggle">
+                </section> -->
                 <section class="filter-row">
                     <section class="filter-group">
                         <label for="filter-type">Type</label>
@@ -109,6 +113,7 @@
                     <section class="sort-group">
                         <label for="sort-option">Sort by</label>
                         <select id="sort-option" onchange="performSearch()">
+                            <option value="relevance">Relevance</option>
                             <option value="title-asc">Title (A-Z)</option>
                             <option value="title-desc">Title (Z-A)</option>
                             <option value="date-desc">Date (Newest first)</option>
