@@ -290,7 +290,12 @@ async function uploadFiles() {
         await uploadToAzure(file, sasUrl, fileData.metadata.customMetadata);
         
         const fileUrl = sasUrl.split('?')[0];
-        await addToFirestoreCollections(fileData, fileUrl, currentUser);
+        
+        // Process file to extract text and generate embeddings
+        const processResult = await processFile(fileUrl, fileData.metadata.type);
+        
+        // Add to Firestore with processing results
+        await addToFirestoreCollections(fileData, fileUrl, currentUser, processResult);
         
         addFileToList(file.name, fileUrl, true);
       } catch (error) {
@@ -316,7 +321,62 @@ async function uploadFiles() {
   }
 }
 
-export async function addToFirestoreCollections(fileData, fileUrl, user) {
+// Function to call the processFile API
+async function processFile(fileUrl, fileType) {
+  console.log('processFile called with:', { fileUrl, fileType });
+
+  // Map detected file type to processFile API expected types
+  const typeMapping = {
+    pdf: 'pdf',
+    document: 'document',
+    text: 'text',
+    code: 'text' // Treat code files as text
+  };
+
+  const mappedType = typeMapping[fileType] || null;
+
+  if (!mappedType) {
+    console.warn(`Unsupported file type for processing: ${fileType}`);
+    return { extractedText: '', embeddings: [] };
+  }
+
+  try {
+    console.log('Preparing fetch request...');
+    const apiEndpoint = 'https://scriptorium.azurewebsites.net/api/processFile';
+    const apiKey = "9dWaV8vYwFhlniMHJCV4m7MgAI2Ag1LMwY9RTSs3sFvKGNugVFm7JQQJ99BEACrIdLPXJ3w3AAABACOGfviS";
+
+    const response = await fetch(apiEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': apiKey
+      },
+      body: JSON.stringify({
+        fileUrl,
+        fileType: mappedType
+      })
+    });
+
+    console.log('Fetch response status:', response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to process file');
+    }
+
+    const data = await response.json();
+    console.log('File processed successfully:', data);
+    return {
+      extractedText: data.extractedText || '',
+      embeddings: data.embeddings || []
+    };
+  } catch (error) {
+    console.error('Error processing file:', error);
+    return { extractedText: '', embeddings: [] }; // Return empty results to allow upload to proceed
+  }
+}
+
+export async function addToFirestoreCollections(fileData, fileUrl, user, processResult = { extractedText: '', embeddings: [] }) {
   const timestamp = serverTimestamp();
   const fileType = fileData.metadata.type;
   const metadata = fileData.metadata.customMetadata;
@@ -343,14 +403,15 @@ export async function addToFirestoreCollections(fileData, fileUrl, user) {
     downloads: 0
   });
 
-  // Then create the searchIndex document
+  // Then create the searchIndex document with processing results
   const searchIndexRef = await addDoc(collection(db, "searchIndex"), {
     itemId: archiveItemRef.id,
     title: metadata.title,
     description: metadata.description,
     tags: tagsArray,
     category: metadata.category,
-    content: "", // Will be populated if you process text files later
+    content: processResult.extractedText,
+    embeddings: processResult.embeddings,
     type: fileType,
     lastModified: fileData.metadata.lastModified,
     uploadedBy: user.uid,
@@ -364,7 +425,7 @@ export async function addToFirestoreCollections(fileData, fileUrl, user) {
       itemId: archiveItemRef.id,
       name: fileData.metadata.name,
       type: fileType,
-      uploadedAt: new Date().toISOString(), // Use client timestamp instead
+      uploadedAt: new Date().toISOString(),
       url: fileUrl
     }),
     lastUpload: serverTimestamp()

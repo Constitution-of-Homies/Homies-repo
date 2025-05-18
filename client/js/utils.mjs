@@ -1,49 +1,52 @@
 // utils.mjs
 export function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    if (typeof bytes !== 'number') return 'Unknown size';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(1)} MB`;
+    return `${(bytes / 1073741824).toFixed(1)} GB`;
 }
   
 export function detectFileType(file) {
-    const type = file.type.split('/')[0];
-    const extension = file.name.split('.').pop().toLowerCase();
-
-    if (type === 'image') return 'image';
-    if (type === 'video') return 'video';
-    if (type === 'audio') return 'audio';
-
-    const documentTypes = ['pdf', 'doc', 'docx', 'txt', 'rtf'];
-    if (documentTypes.includes(extension)) return 'document';
-
-    const spreadsheetTypes = ['xls', 'xlsx', 'csv'];
-    if (spreadsheetTypes.includes(extension)) return 'spreadsheet';
-
-    const presentationTypes = ['ppt', 'pptx'];
-    if (presentationTypes.includes(extension)) return 'presentation';
-
-    const archiveTypes = ['zip', 'rar', '7z', 'tar', 'gz'];
-    if (archiveTypes.includes(extension)) return 'archive';
-
-    const codeTypes = ['js', 'html', 'css', 'py', 'java', 'cpp', 'c', 'php', 'json', 'xml'];
-    if (codeTypes.includes(extension)) return 'code';
-
-    return 'unknown';
+    const type = file.type ? file.type.toLowerCase() : '';
+    if (type.includes('image')) return 'image';
+    if (type.includes('video')) return 'video';
+    if (type.includes('audio')) return 'audio';
+    if (type.includes('pdf')) return 'pdf';
+    if (type.includes('spreadsheet') || type.includes('excel')) return 'spreadsheet';
+    if (type.includes('presentation') || type.includes('powerpoint')) return 'presentation';
+    if (type.includes('zip') || type.includes('rar') || type.includes('tar') || type.includes('7z')) return 'archive';
+    if (type.includes('javascript') || type.includes('python') || type.includes('java') || type.includes('html') || type.includes('css')) return 'code';
+    if (file.name) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
+        if (['doc', 'docx', 'odt'].includes(ext)) return 'document';
+        if (['mp4', 'mov', 'avi', 'mkv'].includes(ext)) return 'video';
+        if (['mp3', 'wav', 'ogg'].includes(ext)) return 'audio';
+        if (['pdf'].includes(ext)) return 'pdf';
+        if (['txt'].includes(ext)) return 'text';
+        if (['xls', 'xlsx', 'csv'].includes(ext)) return 'spreadsheet';
+        if (['ppt', 'pptx'].includes(ext)) return 'presentation';
+        if (['zip', 'rar', 'tar', 'gz', '7z'].includes(ext)) return 'archive';
+        if (['js', 'py', 'java', 'html', 'css', 'json'].includes(ext)) return 'code';
+    }
+    return type.split('/')[0] || 'default';
 }
   
 export function getFileIcon(type) {
-    const icons = {
+    const fileIcons = {
         image: '🖼️',
         video: '🎬',
         audio: '🎵',
+        text: '📄',
         document: '📄',
         spreadsheet: '📊',
         presentation: '📑',
         archive: '🗄️',
         code: '💻',
-        unknown: '📁'
+        pdf: '📕',
+        folder: '📁',
+        default: '📄'
     };
-    return icons[type] || icons.unknown;
+    return fileIcons[type] || fileIcons.unknown;
 }

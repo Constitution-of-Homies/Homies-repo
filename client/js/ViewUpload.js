@@ -63,7 +63,7 @@ function detectFileType(file) {
   if (type.includes('spreadsheet') || type.includes('excel')) return 'spreadsheet';
   if (type.includes('presentation') || type.includes('powerpoint')) return 'presentation';
   if (type.includes('zip') || type.includes('rar') || type.includes('tar') || type.includes('7z')) return 'archive';
-  if (type.includes('text') || type.includes('javascript') || type.includes('python') || type.includes('java') || type.includes('html') || type.includes('css')) return 'code';
+  if (type.includes('javascript') || type.includes('python') || type.includes('java') || type.includes('html') || type.includes('css')) return 'code';
   if (file.name) {
     const ext = file.name.split('.').pop().toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
@@ -73,7 +73,7 @@ function detectFileType(file) {
     if (['xls', 'xlsx', 'csv'].includes(ext)) return 'spreadsheet';
     if (['ppt', 'pptx'].includes(ext)) return 'presentation';
     if (['zip', 'rar', 'tar', 'gz', '7z'].includes(ext)) return 'archive';
-    if (['txt', 'js', 'py', 'java', 'html', 'css', 'json'].includes(ext)) return 'code';
+    if (['js', 'py', 'java', 'html', 'css', 'json'].includes(ext)) return 'code';
   }
   return type.split('/')[0] || 'default';
 }
@@ -101,7 +101,7 @@ function getSimplifiedType(fileType) {
   if (type.includes('spreadsheet') || type.includes('excel')) return 'spreadsheet';
   if (type.includes('presentation') || type.includes('powerpoint')) return 'presentation';
   if (type.includes('zip') || type.includes('rar') || type.includes('tar') || type.includes('7z')) return 'archive';
-  if (type.includes('text') || type.includes('javascript') || type.includes('python') || type.includes('java') || type.includes('html') || type.includes('css')) return 'code';
+  if (type.includes('javascript') || type.includes('python') || type.includes('java') || type.includes('html') || type.includes('css')) return 'code';
   return type.split('/')[0] || 'default';
 }
 
