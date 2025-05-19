@@ -9,25 +9,72 @@
   <link rel="stylesheet" href="css/upload.css">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/back.css">
+  <link rel="stylesheet" href="css/search.css">
+  <link rel="stylesheet" href="css/profile.css">
+  
+  
 </head>
 <body>
-  <main>
+  <main class="dashboard-layout">
+    <section class="side-menu">
+      <nav>
+        <ul>
+          <li>
+            <a href="index.html"><img src="images/icons/home.png" width="18" height="18">Home</a>
+          </li>
+          <li>
+            <a href="ViewUpload.html"><img src="images/icons/upload.png" width="18" height="18">My Uploads</a>
+          </li>
+          <li>
+            <a href="analytics.html"><img src="images/icons/chart.png" width="18" height="18">Analytics</a>
+          </li>
+          <li>
+            <a href="settings.html"><img src="images/icons/settings.png" width="18" height="18">Settings</a>
+          </li>
+        </ul>
+      </nav>
+    </section>
+
+    <section class="main-content">
     <h1>My Files</h1>
     <button class="back-button" onclick="window.location.href='profile.html'">← Go Back</button>
+
+    <section class="search-container">
+      <input type="text" placeholder="Search..." class="search-input">
+      <button class="search-button">
+          <img src="./images/icons/search.png" alt="Search" class="search-icon">
+      </button>
+      <button class="filter-button">
+          <img src="./images/icons/filter.png" alt="Filters" class="filter-icon">
+      </button>
+  </section>
 
     <!-- Breadcrumbs -->
     <nav id="directory-breadcrumbs" class="breadcrumbs">
       <button class="breadcrumb home" data-path="">Home</button>
     </nav>
 
-    <!-- Action Buttons -->
     <section class="directory-controls">
-      <button id="create-folder-btn" class="action-btn">Create Folder</button>
-      <button id="upload-file-btn" class="action-btn">Upload File</button>
+      <button id="create-folder-btn" class="action-btn">
+        <img src="images/icons/create_folder.png" alt="Create Folder" class="action-icon">
+        <span>Create Folder</span>
+      </button>
+      <button id="upload-file-btn" class="action-btn">
+        <img src="./images/icons/upload.png" alt="Upload File" class="action-icon">
+        <span>Upload File</span>
+      </button>
     </section>
 
-    <!-- Files Display -->
-    <section id="files-container"></section>
+<section id="files-container">
+  <section class="file-headers list-view-header">
+    <span></span> <!-- icon placeholder -->
+  <span>Name</span>
+  <span>Date Uploaded</span>
+  <span>Size</span>
+  <span></span>
+  </section>
+</section>
+</section>
   </main>
 
   <!-- Edit Modal -->
@@ -141,6 +188,7 @@
   <!-- Scripts -->
   <script type="module" src="js/ViewUpload.js"></script>
   <script type="module" src="js/upload.js"></script>
+  <script type="module" src="js/home.js"></script>
 
   <!-- Close modal when clicking outside -->
   <script>
