@@ -458,3 +458,268 @@ describe('Upload Module', () => {
     );
   });
 });
+
+describe('processFile Function', () => {
+  const apiEndpoint = 'https://scriptorium.azurewebsites.net/api/processFile';
+  const apiKey = '9dWaV8vYwFhlniMHJCV4m7MgAI2Ag1LMwY9RTSs3sFvKGNugVFm7JQQJ99BEACrIdLPXJ3w3AAABACOGfviS';
+  const mockFileUrl = 'https://example.com/blob';
+
+  beforeEach(() => {
+    // Reset fetch mock
+    mockFetch.mockReset();
+    // Mock console.warn for unsupported type tests
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    console.warn.mockRestore();
+  });
+
+  test('processes PDF file successfully', async () => {
+    const { processFile } = await import('../client/js/upload.js');
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        extractedText: 'Sample PDF content',
+        embeddings: [0.1, 0.2, 0.3],
+      }),
+    });
+
+    const result = await processFile(mockFileUrl, 'pdf');
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      apiEndpoint,
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': apiKey,
+        },
+        body: JSON.stringify({
+          fileUrl: mockFileUrl,
+          fileType: 'pdf',
+        }),
+      })
+    );
+    expect(result).toEqual({
+      extractedText: 'Sample PDF content',
+      embeddings: [0.1, 0.2, 0.3],
+    });
+    expect(console.warn).not.toHaveBeenCalled();
+  });
+
+  test('processes document file successfully', async () => {
+    const { processFile } = await import('../client/js/upload.js');
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        extractedText: 'Document content',
+        embeddings: [0.4, 0.5],
+      }),
+    });
+
+    const result = await processFile(mockFileUrl, 'document');
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      apiEndpoint,
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': apiKey,
+        },
+        body: JSON.stringify({
+          fileUrl: mockFileUrl,
+          fileType: 'document',
+        }),
+      })
+    );
+    expect(result).toEqual({
+      extractedText: 'Document content',
+      embeddings: [0.4, 0.5],
+    });
+    expect(console.warn).not.toHaveBeenCalled();
+  });
+
+  test('processes text file successfully', async () => {
+    const { processFile } = await import('../client/js/upload.js');
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        extractedText: 'Text content',
+        embeddings: [0.6],
+      }),
+    });
+
+    const result = await processFile(mockFileUrl, 'text');
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      apiEndpoint,
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': apiKey,
+        },
+        body: JSON.stringify({
+          fileUrl: mockFileUrl,
+          fileType: 'text',
+        }),
+      })
+    );
+    expect(result).toEqual({
+      extractedText: 'Text content',
+      embeddings: [0.6],
+    });
+    expect(console.warn).not.toHaveBeenCalled();
+  });
+
+  test('processes code file as text successfully', async () => {
+    const { processFile } = await import('../client/js/upload.js');
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        extractedText: 'Code content',
+        embeddings: [0.7, 0.8],
+      }),
+    });
+
+    const result = await processFile(mockFileUrl, 'code');
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      apiEndpoint,
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': apiKey,
+        },
+        body: JSON.stringify({
+          fileUrl: mockFileUrl,
+          fileType: 'text',
+        }),
+      })
+    );
+    expect(result).toEqual({
+      extractedText: 'Code content',
+      embeddings: [0.7, 0.8],
+    });
+    expect(console.warn).not.toHaveBeenCalled();
+  });
+
+  test('returns empty results for unsupported file type', async () => {
+    const { processFile } = await import('../client/js/upload.js');
+    const result = await processFile(mockFileUrl, 'image/jpeg');
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      extractedText: '',
+      embeddings: [],
+    });
+    expect(console.warn).toHaveBeenCalledWith('Unsupported file type for processing: image/jpeg');
+  });
+
+  test('handles API HTTP error', async () => {
+    const { processFile } = await import('../client/js/upload.js');
+    mockFetch.mockResolvedValue({
+      ok: false,
+      json: jest.fn().mockResolvedValue({
+        error: 'Invalid file format',
+      }),
+    });
+
+    const result = await processFile(mockFileUrl, 'pdf');
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      apiEndpoint,
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': apiKey,
+        },
+        body: JSON.stringify({
+          fileUrl: mockFileUrl,
+          fileType: 'pdf',
+        }),
+      })
+    );
+    expect(result).toEqual({
+      extractedText: '',
+      embeddings: [],
+    });
+    expect(console.error).toHaveBeenCalledWith('Error processing file:', expect.any(Error));
+  });
+
+  test('handles API network error', async () => {
+    const { processFile } = await import('../client/js/upload.js');
+    mockFetch.mockRejectedValue(new Error('Network failure'));
+
+    const result = await processFile(mockFileUrl, 'pdf');
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      apiEndpoint,
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': apiKey,
+        },
+        body: JSON.stringify({
+          fileUrl: mockFileUrl,
+          fileType: 'pdf',
+        }),
+      })
+    );
+    expect(result).toEqual({
+      extractedText: '',
+      embeddings: [],
+    });
+    expect(console.error).toHaveBeenCalledWith('Error processing file:', expect.any(Error));
+  });
+
+  test('handles invalid fileUrl', async () => {
+    const { processFile } = await import('../client/js/upload.js');
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        extractedText: 'Content',
+        embeddings: [0.1],
+      }),
+    });
+
+    const result = await processFile('', 'pdf');
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      apiEndpoint,
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': apiKey,
+        },
+        body: JSON.stringify({
+          fileUrl: '',
+          fileType: 'pdf',
+        }),
+      })
+    );
+    expect(result).toEqual({
+      extractedText: 'Content',
+      embeddings: [0.1],
+    });
+    expect(console.warn).not.toHaveBeenCalled();
+  });
+
+  test('handles null fileType', async () => {
+    const { processFile } = await import('../client/js/upload.js');
+    const result = await processFile(mockFileUrl, null);
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      extractedText: '',
+      embeddings: [],
+    });
+    expect(console.warn).toHaveBeenCalledWith('Unsupported file type for processing: null');
+  });
+});

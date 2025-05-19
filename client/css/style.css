@@ -25,12 +25,6 @@ body {
   line-height: 1.6;
 }
 
-main {
-  padding: 2rem;
-  max-width: 800px;
-  margin: auto;
-  text-align: center;
-}
 
 h2 {
   font-size: 1.8rem;

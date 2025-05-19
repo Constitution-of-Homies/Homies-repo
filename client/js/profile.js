@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function updateProfileSection(user, userData) {
+export function updateProfileSection(user, userData) {
     const profileImage = document.querySelector('.profile-image');
     const profileName = document.getElementById('profile-name');
     
@@ -48,7 +48,7 @@ function updateProfileSection(user, userData) {
     profileName.textContent = userData?.username || user?.displayName || "User";
 }
 
-function setupEditProfile(user, userData) {
+export function setupEditProfile(user, userData) {
     const editBtn = document.getElementById('edit-profile-btn');
     const drawer = document.getElementById('edit-drawer');
     const cancelBtn = document.getElementById('cancel-btn');

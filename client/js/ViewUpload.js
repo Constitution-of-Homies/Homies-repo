@@ -46,15 +46,15 @@ fileInput.style.display = 'none';
 document.body.appendChild(fileInput);
 
 // Utility functions
-function formatFileSize(bytes) {
-  if (typeof bytes !== 'number') return 'Unknown size';
+export function formatFileSize(bytes) {
+  if (typeof bytes !== 'number') return ' ';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
   if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(1)} MB`;
   return `${(bytes / 1073741824).toFixed(1)} GB`;
 }
 
-function detectFileType(file) {
+export function detectFileType(file) {
   const type = file.type ? file.type.toLowerCase() : '';
   if (type.includes('image')) return 'image';
   if (type.includes('video')) return 'video';
@@ -78,11 +78,11 @@ function detectFileType(file) {
   return type.split('/')[0] || 'default';
 }
 
-function getFileIcon(type) {
+export function getFileIcon(type) {
   return fileIcons[type] || fileIcons.default;
 }
 
-function formatDate(date) {
+export function formatDate(date) {
   if (!date) return 'Unknown date';
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -91,7 +91,7 @@ function formatDate(date) {
   });
 }
 
-function getSimplifiedType(fileType) {
+export function getSimplifiedType(fileType) {
   if (!fileType) return 'default';
   const type = fileType.toLowerCase();
   if (type.includes('image')) return 'image';
@@ -351,16 +351,29 @@ function setupEventListeners(userId) {
   }
 }
 
-async function displayFiles(userId) {
+function initializeFileDisplay() {
   const container = document.getElementById('files-container');
+  // Instead of replacing everything, just make sure the files-list section exists
+  // Only create the files-list if it doesn't exist already
+  let filesList = document.getElementById('files-list');
+  if (!filesList) {
+    filesList = document.createElement('section');
+    filesList.id = 'files-list';
+    container.appendChild(filesList);
+  }
+  return filesList;
+}
+
+async function displayFiles(userId) {
+  const filesList = initializeFileDisplay();
   const breadcrumbs = document.getElementById('directory-breadcrumbs');
-  if (!container || !breadcrumbs) {
+  if (!filesList || !breadcrumbs) {
     console.error("Required elements not found");
     return;
   }
 
   try {
-    container.innerHTML = '<section class="file-card">Loading...</section>';
+    filesList.innerHTML = '<section class="file-card">Loading...</section>';
     
     // Update breadcrumbs
     updateBreadcrumbs();
@@ -383,10 +396,10 @@ async function displayFiles(userId) {
     
     const filesSnapshot = await getDocs(filesQuery);
     
-    container.innerHTML = '';
+    filesList.innerHTML = '';
 
     if (foldersSnapshot.empty && filesSnapshot.empty) {
-      container.innerHTML = '<p class="empty-message">This folder is empty</p>';
+      filesList.innerHTML = '<p class="empty-message">This folder is empty</p>';
       return;
     }
 
@@ -419,7 +432,7 @@ async function displayFiles(userId) {
             <section class="file-menu hidden" id="folder-menu-${doc.id}">
               <button class="rename-folder-btn" data-folder-id="${doc.id}" data-current-name="${folder.name}">Rename</button>
               <button class="delete-folder-btn" data-folder-id="${doc.id}">Delete</button>
-          </section>
+    </section>
           </section>
         </section>
       `;
@@ -478,14 +491,11 @@ async function displayFiles(userId) {
       });
     });
 
-    
-
-
-    container.appendChild(groupCard);
+    filesList.appendChild(groupCard);
 
   } catch (error) {
     console.error("Error loading files:", error);
-    container.innerHTML = 
+    filesList.innerHTML = 
       '<p class="error-message">Error loading files. Please check console for details.</p>';
   }
 }
@@ -612,7 +622,7 @@ async function handleFileUpload(files, userId) {
   }
 }
 
-async function uploadToAzure(file, sasUrl, metadata) {
+export async function uploadToAzure(file, sasUrl, metadata) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
 
@@ -951,7 +961,7 @@ async function deleteFile(docId, blobName) {
           },
           body: JSON.stringify({ 
             blobName: fileData.url.split('/').pop() // Extract blob name from URL
-          })
+          }) 
         });
         
         if (!response.ok) {
