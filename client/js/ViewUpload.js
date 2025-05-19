@@ -78,7 +78,7 @@ export function detectFileType(file) {
   return type.split('/')[0] || 'default';
 }
 
-function getFileIcon(type) {
+export function getFileIcon(type) {
   return fileIcons[type] || fileIcons.default;
 }
 
@@ -622,7 +622,7 @@ async function handleFileUpload(files, userId) {
   }
 }
 
-async function uploadToAzure(file, sasUrl, metadata) {
+export async function uploadToAzure(file, sasUrl, metadata) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
 

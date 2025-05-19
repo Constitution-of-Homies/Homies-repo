@@ -1,4 +1,3 @@
-// tests/ViewUpload.test.js
 import { jest } from '@jest/globals';
 
 // Mock Firebase App
@@ -132,6 +131,10 @@ describe('ViewUpload Module', () => {
     // Mock window.alert and window.confirm
     jest.spyOn(window, 'alert').mockImplementation(() => {});
     jest.spyOn(window, 'confirm').mockImplementation(() => true);
+
+    // Mock console.error and console.log
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'log').mockImplementation(() => {});
 
     // Reset DOM
     document.getElementById('files-container').innerHTML = '';
@@ -294,134 +297,347 @@ describe('ViewUpload Module', () => {
     expect(container.querySelector('.file-card .name').textContent).toBe('Test PDF');
   }, 15000);
 
-  test('uploads file successfully', async () => {
-    const user = { uid: 'user123' };
-    auth.currentUser = user;
-    const callback = onAuthStateChanged.mock.calls[0][1];
-    callback(user);
+  describe('handleFileUpload', () => {
+    let handleFileUpload, displayFiles;
 
-    jest.advanceTimersByTime(1000);
-    await Promise.resolve();
-
-    const fileInput = document.getElementById('fileInput');
-    const file = new File([new ArrayBuffer(1024)], 'test.pdf', { type: 'application/pdf' });
-    const fileList = {
-      0: file,
-      length: 1,
-      item: index => fileList[index],
-      [Symbol.iterator]: function* () {
-        yield file;
-      },
-    };
-    Object.defineProperty(fileInput, 'files', {
-      value: fileList,
-      writable: true,
+    beforeEach(async () => {
+      const module = await import('../client/js/ViewUpload.js');
+      handleFileUpload = module.handleFileUpload;
+      displayFiles = jest.spyOn(module, 'displayFiles').mockResolvedValue();
     });
 
-    let progressCallback;
-    mockXhr.upload.onprogress = jest.fn(e => {
-      progressCallback = e;
-    });
-    mockXhr.onload = jest.fn(() => {
-      mockXhr.status = 200;
-    });
-    mockXhr.send.mockImplementation(() => {
-      if (progressCallback) {
-        progressCallback({ lengthComputable: true, loaded: 50, total: 100 });
-      }
-      mockXhr.onload();
-    });
+    test('successfully uploads a single file', async () => {
+      const user = { uid: 'user123' };
+      auth.currentUser = user;
+      const callback = onAuthStateChanged.mock.calls[0][1];
+      callback(user);
 
-    fileInput.dispatchEvent(new Event('change'));
+      const fileInput = document.getElementById('fileInput');
+      const file = new File([new ArrayBuffer(1024)], 'test.pdf', { type: 'application/pdf' });
+      const fileList = {
+        0: file,
+        length: 1,
+        item: index => fileList[index],
+        [Symbol.iterator]: function* () {
+          yield file;
+        },
+      };
 
-    jest.advanceTimersByTime(5000);
-    await Promise.resolve();
+      mockXhr.onload = jest.fn(() => {
+        mockXhr.status = 200;
+      });
+      mockXhr.send.mockImplementation(() => {
+        mockXhr.onload();
+      });
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://scriptorium.azurewebsites.net/api/get-sas-url',
-      expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: expect.any(String),
-      })
-    );
-    expect(mockXhr.open).toHaveBeenCalledWith('PUT', 'https://example.com/blob?token=abc', true);
-    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('x-ms-blob-type', 'BlockBlob');
-    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
-    expect(addDoc).toHaveBeenCalled();
-    expect(updateDoc).toHaveBeenCalled();
-    expect(window.alert).toHaveBeenCalledWith('Files uploaded successfully!');
-  }, 15000);
+      await handleFileUpload(fileList, user.uid);
 
-  test('handles unauthenticated file upload', async () => {
-    const callback = onAuthStateChanged.mock.calls[0][1];
-    callback(null);
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://scriptorium.azurewebsites.net/api/get-sas-url',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: expect.stringContaining('"blobName":"user123/'),
+        })
+      );
+      expect(mockXhr.open).toHaveBeenCalledWith('PUT', 'https://example.com/blob?token=abc', true);
+      expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('x-ms-blob-type', 'BlockBlob');
+      expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
+      expect(addDoc).toHaveBeenCalledWith(
+        { collection: true },
+        expect.objectContaining({
+          name: 'test.pdf',
+          type: 'pdf',
+          size: 1024,
+          url: 'https://example.com/blob',
+          uploadedBy: 'user123',
+          path: '',
+          metadata: {
+            title: 'test.pdf',
+            description: '',
+            tags: [],
+            category: 'general',
+          },
+        })
+      );
+      expect(updateDoc).toHaveBeenCalledWith(
+        { mockDoc: true, ref: { id: 'mockDoc' } },
+        expect.objectContaining({
+          uploads: expect.any(Object),
+          lastUpload: { timestamp: true },
+        })
+      );
+      expect(displayFiles).toHaveBeenCalledWith(user.uid);
+      expect(window.alert).toHaveBeenCalledWith('Files uploaded successfully!');
+      expect(fileInput.value).toBe('');
+    }, 15000);
 
-    jest.advanceTimersByTime(1000);
-    await Promise.resolve();
+    test('successfully uploads multiple files', async () => {
+      const user = { uid: 'user123' };
+      auth.currentUser = user;
+      const callback = onAuthStateChanged.mock.calls[0][1];
+      callback(user);
 
-    const fileInput = document.getElementById('fileInput');
-    const file = new File([new ArrayBuffer(1024)], 'test.pdf', { type: 'application/pdf' });
-    const fileList = {
-      0: file,
-      length: 1,
-      item: index => fileList[index],
-      [Symbol.iterator]: function* () {
-        yield file;
-      },
-    };
-    Object.defineProperty(fileInput, 'files', {
-      value: fileList,
-      writable: true,
-    });
+      const file1 = new File([new ArrayBuffer(1024)], 'test1.pdf', { type: 'application/pdf' });
+      const file2 = new File([new ArrayBuffer(2048)], 'test2.png', { type: 'image/png' });
+      const fileList = {
+        0: file1,
+        1: file2,
+        length: 2,
+        item: index => [file1, file2][index],
+        [Symbol.iterator]: function* () {
+          yield file1;
+          yield file2;
+        },
+      };
 
-    fileInput.dispatchEvent(new Event('change'));
+      mockXhr.onload = jest.fn(() => {
+        mockXhr.status = 200;
+      });
+      mockXhr.send.mockImplementation(() => {
+        mockXhr.onload();
+      });
 
-    jest.advanceTimersByTime(5000);
-    await Promise.resolve();
+      await handleFileUpload(fileList, user.uid);
 
-    expect(window.alert).toHaveBeenCalledWith('Please sign in to upload files.');
-    expect(mockFetch).not.toHaveBeenCalled();
-  }, 15000);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockXhr.open).toHaveBeenCalledTimes(2);
+      expect(addDoc).toHaveBeenCalledTimes(2);
+      expect(addDoc).toHaveBeenCalledWith(
+        { collection: true },
+        expect.objectContaining({ name: 'test1.pdf', type: 'pdf', size: 1024 })
+      );
+      expect(addDoc).toHaveBeenCalledWith(
+        { collection: true },
+        expect.objectContaining({ name: 'test2.png', type: 'image', size: 2048 })
+      );
+      expect(updateDoc).toHaveBeenCalledTimes(1);
+      expect(displayFiles).toHaveBeenCalledWith(user.uid);
+      expect(window.alert).toHaveBeenCalledWith('Files uploaded successfully!');
+    }, 15000);
 
-  test('handles upload failure', async () => {
-    const user = { uid: 'user123' };
-    auth.currentUser = user;
-    const callback = onAuthStateChanged.mock.calls[0][1];
-    callback(user);
+    test('handles empty file list', async () => {
+      const user = { uid: 'user123' };
+      auth.currentUser = user;
+      const callback = onAuthStateChanged.mock.calls[0][1];
+      callback(user);
 
-    jest.advanceTimersByTime(1000);
-    await Promise.resolve();
+      const fileList = {
+        length: 0,
+        item: () => null,
+        [Symbol.iterator]: function* () {},
+      };
 
-    const fileInput = document.getElementById('fileInput');
-    const file = new File([new ArrayBuffer(1024)], 'test.pdf', { type: 'application/pdf' });
-    const fileList = {
-      0: file,
-      length: 1,
-      item: index => fileList[index],
-      [Symbol.iterator]: function* () {
-        yield file;
-      },
-    };
-    Object.defineProperty(fileInput, 'files', {
-      value: fileList,
-      writable: true,
-    });
+      await handleFileUpload(fileList, user.uid);
 
-    mockXhr.onerror = jest.fn();
-    mockXhr.send.mockImplementation(() => {
-      mockXhr.onerror();
-    });
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockXhr.open).not.toHaveBeenCalled();
+      expect(addDoc).not.toHaveBeenCalled();
+      expect(updateDoc).not.toHaveBeenCalled();
+      expect(displayFiles).not.toHaveBeenCalled();
+      expect(window.alert).not.toHaveBeenCalled();
+    }, 15000);
 
-    fileInput.dispatchEvent(new Event('change'));
+    test('handles unauthenticated user', async () => {
+      const fileInput = document.getElementById('fileInput');
+      const file = new File([new ArrayBuffer(1024)], 'test.pdf', { type: 'application/pdf' });
+      const fileList = {
+        0: file,
+        length: 1,
+        item: index => fileList[index],
+        [Symbol.iterator]: function* () {
+          yield file;
+        },
+      };
 
-    jest.advanceTimersByTime(5000);
-    await Promise.resolve();
+      await handleFileUpload(fileList, null);
 
-    expect(mockFetch).toHaveBeenCalled();
-    expect(mockXhr.open).toHaveBeenCalled();
-    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Error uploading files: Network error'));
-  }, 15000);
+      expect(window.alert).toHaveBeenCalledWith('Please sign in to upload files.');
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockXhr.open).not.toHaveBeenCalled();
+      expect(addDoc).not.toHaveBeenCalled();
+      expect(updateDoc).not.toHaveBeenCalled();
+      expect(displayFiles).not.toHaveBeenCalled();
+    }, 15000);
+
+    test('handles getSasUrl failure', async () => {
+      const user = { uid: 'user123' };
+      auth.currentUser = user;
+      const callback = onAuthStateChanged.mock.calls[0][1];
+      callback(user);
+
+      const file = new File([new ArrayBuffer(1024)], 'test.pdf', { type: 'application/pdf' });
+      const fileList = {
+        0: file,
+        length: 1,
+        item: index => fileList[index],
+        [Symbol.iterator]: function* () {
+          yield file;
+        },
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({ error: 'Invalid blob name' }),
+        text: () => Promise.resolve('Bad Request'),
+      });
+
+      await handleFileUpload(fileList, user.uid);
+
+      expect(mockFetch).toHaveBeenCalled();
+      expect(console.error).toHaveBeenCalledWith('Error uploading files:', expect.any(Error));
+      expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Error uploading files: Failed to get SAS URL: Invalid blob name'));
+      expect(mockXhr.open).not.toHaveBeenCalled();
+      expect(addDoc).not.toHaveBeenCalled();
+      expect(updateDoc).not.toHaveBeenCalled();
+    }, 15000);
+
+    test('handles uploadToAzure failure', async () => {
+      const user = { uid: 'user123' };
+      auth.currentUser = user;
+      const callback = onAuthStateChanged.mock.calls[0][1];
+      callback(user);
+
+      const file = new File([new ArrayBuffer(1024)], 'test.pdf', { type: 'application/pdf' });
+      const fileList = {
+        0: file,
+        length: 1,
+        item: index => fileList[index],
+        [Symbol.iterator]: function* () {
+          yield file;
+        },
+      };
+
+      mockXhr.onerror = jest.fn();
+      mockXhr.send.mockImplementation(() => {
+        mockXhr.onerror();
+      });
+
+      await handleFileUpload(fileList, user.uid);
+
+      expect(mockFetch).toHaveBeenCalled();
+      expect(mockXhr.open).toHaveBeenCalled();
+      expect(console.error).toHaveBeenCalledWith('Error uploading files:', expect.any(Error));
+      expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Error uploading files: Network error'));
+      expect(addDoc).not.toHaveBeenCalled();
+      expect(updateDoc).not.toHaveBeenCalled();
+    }, 15000);
+
+    test('handles addDoc failure', async () => {
+      const user = { uid: 'user123' };
+      auth.currentUser = user;
+      const callback = onAuthStateChanged.mock.calls[0][1];
+      callback(user);
+
+      const file = new File([new ArrayBuffer(1024)], 'test.pdf', { type: 'application/pdf' });
+      const fileList = {
+        0: file,
+        length: 1,
+        item: index => fileList[index],
+        [Symbol.iterator]: function* () {
+          yield file;
+        },
+      };
+
+      addDoc.mockRejectedValueOnce(new Error('Firestore error'));
+
+      mockXhr.onload = jest.fn(() => {
+        mockXhr.status = 200;
+      });
+      mockXhr.send.mockImplementation(() => {
+        mockXhr.onload();
+      });
+
+      await handleFileUpload(fileList, user.uid);
+
+      expect(mockFetch).toHaveBeenCalled();
+      expect(mockXhr.open).toHaveBeenCalled();
+      expect(addDoc).toHaveBeenCalled();
+      expect(console.error).toHaveBeenCalledWith('Error uploading files:', expect.any(Error));
+      expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Error uploading files: Firestore error'));
+      expect(updateDoc).not.toHaveBeenCalled();
+    }, 15000);
+
+    test('handles updateDoc failure', async () => {
+      const user = { uid: 'user123' };
+      auth.currentUser = user;
+      const callback = onAuthStateChanged.mock.calls[0][1];
+      callback(user);
+
+      const file = new File([new ArrayBuffer(1024)], 'test.pdf', { type: 'application/pdf' });
+      const fileList = {
+        0: file,
+        length: 1,
+        item: index => fileList[index],
+        [Symbol.iterator]: function* () {
+          yield file;
+        },
+      };
+
+      updateDoc.mockRejectedValueOnce(new Error('Firestore update error'));
+
+      mockXhr.onload = jest.fn(() => {
+        mockXhr.status = 200;
+      });
+      mockXhr.send.mockImplementation(() => {
+        mockXhr.onload();
+      });
+
+      await handleFileUpload(fileList, user.uid);
+
+      expect(mockFetch).toHaveBeenCalled();
+      expect(mockXhr.open).toHaveBeenCalled();
+      expect(addDoc).toHaveBeenCalled();
+      expect(updateDoc).toHaveBeenCalled();
+      expect(console.error).toHaveBeenCalledWith('Error uploading files:', expect.any(Error));
+      expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Error uploading files: Firestore update error'));
+    }, 15000);
+
+    test('handles file with missing metadata', async () => {
+      const user = { uid: 'user123' };
+      auth.currentUser = user;
+      const callback = onAuthStateChanged.mock.calls[0][1];
+      callback(user);
+
+      const file = new File([new ArrayBuffer(1024)], '', { type: '' });
+      const fileList = {
+        0: file,
+        length: 1,
+        item: index => fileList[index],
+        [Symbol.iterator]: function* () {
+          yield file;
+        },
+      };
+
+      mockXhr.onload = jest.fn(() => {
+        mockXhr.status = 200;
+      });
+      mockXhr.send.mockImplementation(() => {
+        mockXhr.onload();
+      });
+
+      await handleFileUpload(fileList, user.uid);
+
+      expect(addDoc).toHaveBeenCalledWith(
+        { collection: true },
+        expect.objectContaining({
+          name: '',
+          type: 'default',
+          size: 1024,
+          url: 'https://example.com/blob',
+          uploadedBy: 'user123',
+          metadata: {
+            title: '',
+            description: '',
+            tags: [],
+            category: 'general',
+          },
+        })
+      );
+      expect(window.alert).toHaveBeenCalledWith('Files uploaded successfully!');
+    }, 15000);
+  });
 
   test('creates folder', async () => {
     const user = { uid: 'user123' };
@@ -1021,6 +1237,7 @@ describe('ViewUpload Module', () => {
         expect(detectFileType(file)).toBe('text');
       });
     });
+
     describe('getSimplifiedType', () => {
       const { getSimplifiedType } = require('../client/js/ViewUpload.js');
 
@@ -1067,5 +1284,283 @@ describe('ViewUpload Module', () => {
         expect(getSimplifiedType('/')).toBe('default');
       });
     });
+  });
+});
+
+describe('getFileIcon', () => {
+  const { getFileIcon } = require('../client/js/ViewUpload.js');
+
+  test('returns correct icon for known file types', () => {
+    expect(getFileIcon('image')).toBe('🖼️');
+    expect(getFileIcon('pdf')).toBe('📕');
+    expect(getFileIcon('video')).toBe('🎥');
+    expect(getFileIcon('audio')).toBe('🎵');
+    expect(getFileIcon('spreadsheet')).toBe('📊');
+    expect(getFileIcon('presentation')).toBe('📽️');
+    expect(getFileIcon('archive')).toBe('🗃️');
+    expect(getFileIcon('code')).toBe('💻');
+  });
+
+  test('returns default icon for unknown file types', () => {
+    expect(getFileIcon('text')).toBe('📄');
+    expect(getFileIcon('application')).toBe('📄');
+    expect(getFileIcon('unknown')).toBe('📄');
+  });
+
+  test('returns default icon for falsy inputs', () => {
+    expect(getFileIcon('')).toBe('📄');
+    expect(getFileIcon(null)).toBe('📄');
+    expect(getFileIcon(undefined)).toBe('📄');
+  });
+});
+
+describe('formatDate', () => {
+  const { formatDate } = require('../client/js/ViewUpload.js');
+
+  test('formats valid date correctly', () => {
+    const date = new Date('2023-01-01T12:00:00Z');
+    expect(formatDate(date)).toBe('Jan 1, 2023');
+
+    const date2 = new Date('2025-05-19T14:16:00Z');
+    expect(formatDate(date2)).toBe('May 19, 2025');
+  });
+
+  test('returns "Unknown date" for falsy inputs', () => {
+    expect(formatDate(null)).toBe('Unknown date');
+    expect(formatDate(undefined)).toBe('Unknown date');
+    expect(formatDate('')).toBe('Unknown date');
+    expect(formatDate(0)).toBe('Unknown date');
+    expect(formatDate(false)).toBe('Unknown date');
+  });
+
+  test('returns "Unknown date" for invalid date', () => {
+    const invalidDate = new Date('invalid');
+    expect(formatDate(invalidDate)).toBe('Unknown date');
+  });
+});
+
+describe('filesUploaded event listener', () => {
+  let displayFiles;
+
+  beforeEach(async () => {
+    // Reset mocks and re-import module to ensure fresh event listener
+    jest.resetModules();
+    jest.clearAllMocks();
+
+    // Set up auth mock
+    mockFirebase.auth.currentUser = null;
+
+    // Import ViewUpload.js to register event listener
+    const module = await import('../client/js/ViewUpload.js');
+    // Mock displayFiles
+    displayFiles = jest.spyOn(module, 'displayFiles').mockResolvedValue();
+  });
+
+  afterEach(() => {
+    // Clean up event listeners to prevent leakage
+    window.removeEventListener('filesUploaded', expect.any(Function));
+  });
+
+  test('calls displayFiles for authenticated user', async () => {
+    // Set authenticated user
+    mockFirebase.auth.currentUser = { uid: 'user123' };
+
+    // Dispatch filesUploaded event
+    window.dispatchEvent(new Event('filesUploaded'));
+
+    // Verify displayFiles was called
+    expect(displayFiles).toHaveBeenCalledWith('user123');
+    expect(displayFiles).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not call displayFiles for unauthenticated user', async () => {
+    // Ensure no authenticated user
+    mockFirebase.auth.currentUser = null;
+
+    // Dispatch filesUploaded event
+    window.dispatchEvent(new Event('filesUploaded'));
+
+    // Verify displayFiles was not called
+    expect(displayFiles).not.toHaveBeenCalled();
+  });
+});
+
+describe('uploadToAzure', () => {
+  let consoleLogSpy;
+  const { uploadToAzure } = require('../client/js/ViewUpload.js');
+
+  beforeEach(() => {
+    // Reset mockXhr state
+    mockXhr.status = 200;
+    mockXhr.onload = null;
+    mockXhr.onerror = null;
+    mockXhr.upload.onprogress = null;
+    mockXhr.open.mockClear();
+    mockXhr.setRequestHeader.mockClear();
+    mockXhr.send.mockClear();
+
+    // Spy on console.log for progress tracking
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+  });
+
+  test('successfully uploads file with valid inputs', async () => {
+    const file = new File([new ArrayBuffer(1024)], 'test.pdf', { type: 'application/pdf' });
+    const sasUrl = 'https://example.com/blob?token=abc';
+    const metadata = {
+      title: 'Test PDF',
+      description: 'A test file',
+      tags: 'test, pdf',
+      category: 'general'
+    };
+
+    mockXhr.onload = jest.fn(() => {
+      mockXhr.status = 200;
+    });
+    mockXhr.send.mockImplementation(() => {
+      mockXhr.onload();
+    });
+
+    await expect(uploadToAzure(file, sasUrl, metadata)).resolves.toBeUndefined();
+
+    expect(mockXhr.open).toHaveBeenCalledWith('PUT', sasUrl, true);
+    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('x-ms-blob-type', 'BlockBlob');
+    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
+    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('x-ms-meta-title', 'Test PDF');
+    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('x-ms-meta-description', 'A test file');
+    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('x-ms-meta-tags', 'test, pdf');
+    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('x-ms-meta-category', 'general');
+    expect(mockXhr.send).toHaveBeenCalledWith(file);
+  });
+
+  test('rejects with error on non-2xx status', async () => {
+    const file = new File([new ArrayBuffer(1024)], 'test.pdf', { type: 'application/pdf' });
+    const sasUrl = 'https://example.com/blob?token=abc';
+    const metadata = {
+      title: 'Test PDF',
+      description: '',
+      tags: '',
+      category: 'general'
+    };
+
+    mockXhr.onload = jest.fn(() => {
+      mockXhr.status = 400;
+    });
+    mockXhr.send.mockImplementation(() => {
+      mockXhr.onload();
+    });
+
+    await expect(uploadToAzure(file, sasUrl, metadata)).rejects.toThrow('Upload failed: 400');
+
+    expect(mockXhr.open).toHaveBeenCalledWith('PUT', sasUrl, true);
+    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('x-ms-blob-type', 'BlockBlob');
+    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
+    expect(mockXhr.send).toHaveBeenCalledWith(file);
+  });
+
+  test('rejects with error on network failure', async () => {
+    const file = new File([new ArrayBuffer(1024)], 'test.pdf', { type: 'application/pdf' });
+    const sasUrl = 'https://example.com/blob?token=abc';
+    const metadata = {
+      title: 'Test PDF',
+      description: '',
+      tags: '',
+      category: 'general'
+    };
+
+    mockXhr.onerror = jest.fn();
+    mockXhr.send.mockImplementation(() => {
+      mockXhr.onerror();
+    });
+
+    await expect(uploadToAzure(file, sasUrl, metadata)).rejects.toThrow('Network error during upload');
+
+    expect(mockXhr.open).toHaveBeenCalledWith('PUT', sasUrl, true);
+    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('x-ms-blob-type', 'BlockBlob');
+    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
+    expect(mockXhr.send).toHaveBeenCalledWith(file);
+  });
+
+  test('logs progress for computable upload events', async () => {
+    const file = new File([new ArrayBuffer(1024)], 'test.pdf', { type: 'application/pdf' });
+    const sasUrl = 'https://example.com/blob?token=abc';
+    const metadata = {
+      title: 'Test PDF',
+      description: '',
+      tags: '',
+      category: 'general'
+    };
+
+    let progressCallback;
+    mockXhr.upload.onprogress = jest.fn((e) => {
+      progressCallback = mockXhr.upload.onprogress;
+    });
+    mockXhr.onload = jest.fn(() => {
+      mockXhr.status = 200;
+    });
+    mockXhr.send.mockImplementation(() => {
+      // Simulate progress events
+      progressCallback({ lengthComputable: true, loaded: 512, total: 1024 });
+      progressCallback({ lengthComputable: true, loaded: 1024, total: 1024 });
+      mockXhr.onload();
+    });
+
+    await uploadToAzure(file, sasUrl, metadata);
+
+    expect(consoleLogSpy).toHaveBeenCalledWith('Upload progress: 50%');
+    expect(consoleLogSpy).toHaveBeenCalledWith('Upload progress: 100%');
+    expect(mockXhr.send).toHaveBeenCalledWith(file);
+  });
+
+  test('uses fallback Content-Type when file.type is empty', async () => {
+    const file = new File([new ArrayBuffer(1024)], 'test.bin', { type: '' });
+    const sasUrl = 'https://example.com/blob?token=abc';
+    const metadata = {
+      title: 'Test File',
+      description: '',
+      tags: '',
+      category: 'general'
+    };
+
+    mockXhr.onload = jest.fn(() => {
+      mockXhr.status = 200;
+    });
+    mockXhr.send.mockImplementation(() => {
+      mockXhr.onload();
+    });
+
+    await uploadToAzure(file, sasUrl, metadata);
+
+    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('Content-Type', 'application/octet-stream');
+    expect(mockXhr.send).toHaveBeenCalledWith(file);
+  });
+
+  test('handles falsy metadata values', async () => {
+    const file = new File([new ArrayBuffer(1024)], 'test.pdf', { type: 'application/pdf' });
+    const sasUrl = 'https://example.com/blob?token=abc';
+    const metadata = {
+      title: '',
+      description: null,
+      tags: undefined,
+      category: ''
+    };
+
+    mockXhr.onload = jest.fn(() => {
+      mockXhr.status = 200;
+    });
+    mockXhr.send.mockImplementation(() => {
+      mockXhr.onload();
+    });
+
+    await uploadToAzure(file, sasUrl, metadata);
+
+    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('x-ms-meta-title', '');
+    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('x-ms-meta-description', 'null');
+    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('x-ms-meta-tags', 'undefined');
+    expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('x-ms-meta-category', '');
+    expect(mockXhr.send).toHaveBeenCalledWith(file);
   });
 });

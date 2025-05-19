@@ -237,8 +237,261 @@ describe('Profile Module', () => {
       { collection: 'users', id: 'user123' },
       expect.objectContaining({
         displayName: 'New Name',
-        email: 'new@example.com'
+        email: 'new@example.com',
+        updatedAt: expect.any(String)
       })
     );
+  });
+
+  describe('DOMContentLoaded Event Listener', () => {
+    let updateProfileSectionSpy, setupEditProfileSpy;
+
+    beforeEach(() => {
+      // Spy on exported functions
+      updateProfileSectionSpy = jest.spyOn(require('../client/js/profile.js'), 'updateProfileSection');
+      setupEditProfileSpy = jest.spyOn(require('../client/js/profile.js'), 'setupEditProfile');
+      // Ensure profile.js is imported to register the event listener
+      jest.resetModules();
+      jest.mock('../client/js/firebase.js', () => ({
+        auth: { mockAuth: true },
+        db: { mockDb: true },
+      }));
+      require('../client/js/profile.js');
+    });
+
+    afterEach(() => {
+      updateProfileSectionSpy.mockRestore();
+      setupEditProfileSpy.mockRestore();
+    });
+
+    test('handles authenticated user with valid Firestore data', async () => {
+      const user = { uid: 'user123', email: 'test@example.com' };
+      const userData = { username: 'Test User', photoURL: 'https://example.com/photo.jpg' };
+      getDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => userData,
+      });
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      mockAuth.onAuthStateChanged.mock.calls[0][1](user);
+
+      await Promise.resolve();
+
+      expect(getDoc).toHaveBeenCalledWith({ collection: 'users', id: 'user123' });
+      expect(updateProfileSectionSpy).toHaveBeenCalledWith(user, userData);
+      expect(setupEditProfileSpy).toHaveBeenCalledWith(user, userData);
+      expect(mockLocation.href).toBe('');
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    test('handles authenticated user with no Firestore document', async () => {
+      const user = { uid: 'user123', email: 'test@example.com' };
+      getDoc.mockResolvedValue({
+        exists: () => false,
+        data: () => undefined,
+      });
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      mockAuth.onAuthStateChanged.mock.calls[0][1](user);
+
+      await Promise.resolve();
+
+      expect(getDoc).toHaveBeenCalledWith({ collection: 'users', id: 'user123' });
+      expect(updateProfileSectionSpy).toHaveBeenCalledWith(user, null);
+      expect(setupEditProfileSpy).toHaveBeenCalledWith(user, null);
+      expect(mockLocation.href).toBe('');
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    test('redirects to login on Firestore error', async () => {
+      const user = { uid: 'user123', email: 'test@example.com' };
+      getDoc.mockRejectedValue(new Error('Firestore error'));
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      mockAuth.onAuthStateChanged.mock.calls[0][1](user);
+
+      await Promise.resolve();
+
+      expect(getDoc).toHaveBeenCalledWith({ collection: 'users', id: 'user123' });
+      expect(updateProfileSectionSpy).not.toHaveBeenCalled();
+      expect(setupEditProfileSpy).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error loading user data:', expect.any(Error));
+      expect(mockLocation.href).toBe('login.html');
+    });
+
+    test('redirects to login for unauthenticated user', async () => {
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      mockAuth.onAuthStateChanged.mock.calls[0][1](null);
+
+      await Promise.resolve();
+
+      expect(getDoc).not.toHaveBeenCalled();
+      expect(updateProfileSectionSpy).not.toHaveBeenCalled();
+      expect(setupEditProfileSpy).not.toHaveBeenCalled();
+      expect(mockLocation.href).toBe('login.html');
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    test('does not execute before DOMContentLoaded', async () => {
+      const user = { uid: 'user123', email: 'test@example.com' };
+      mockAuth.onAuthStateChanged.mock.calls[0][1](user);
+
+      await Promise.resolve();
+
+      expect(getDoc).not.toHaveBeenCalled();
+      expect(updateProfileSectionSpy).not.toHaveBeenCalled();
+      expect(setupEditProfileSpy).not.toHaveBeenCalled();
+      expect(mockLocation.href).toBe('');
+    });
+
+    test('handles invalid user object missing uid', async () => {
+      const user = { email: 'test@example.com' }; // No uid
+      getDoc.mockRejectedValue(new Error('Invalid user object'));
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      mockAuth.onAuthStateChanged.mock.calls[0][1](user);
+
+      await Promise.resolve();
+
+      expect(getDoc).not.toHaveBeenCalled(); // doc() will throw due to undefined uid
+      expect(updateProfileSectionSpy).not.toHaveBeenCalled();
+      expect(setupEditProfileSpy).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error loading user data:', expect.any(Error));
+      expect(mockLocation.href).toBe('login.html');
+    });
+
+    test('handles slow Firestore response', async () => {
+      const user = { uid: 'user123', email: 'test@example.com' };
+      const userData = { username: 'Test User', photoURL: 'https://example.com/photo.jpg' };
+      getDoc.mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve({
+              exists: () => true,
+              data: () => userData,
+            }), 100)
+          )
+      );
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      mockAuth.onAuthStateChanged.mock.calls[0][1](user);
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      expect(getDoc).toHaveBeenCalledWith({ collection: 'users', id: 'user123' });
+      expect(updateProfileSectionSpy).toHaveBeenCalledWith(user, userData);
+      expect(setupEditProfileSpy).toHaveBeenCalledWith(user, userData);
+      expect(mockLocation.href).toBe('');
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    test('handles multiple DOMContentLoaded events', async () => {
+      const user = { uid: 'user123', email: 'test@example.com' };
+      const userData = { username: 'Test User', photoURL: 'https://example.com/photo.jpg' };
+      getDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => userData,
+      });
+
+      // Fire DOMContentLoaded multiple times
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      mockAuth.onAuthStateChanged.mock.calls[0][1](user);
+
+      await Promise.resolve();
+
+      expect(getDoc).toHaveBeenCalledTimes(1); // Should only call once
+      expect(updateProfileSectionSpy).toHaveBeenCalledTimes(1);
+      expect(setupEditProfileSpy).toHaveBeenCalledTimes(1);
+      expect(mockLocation.href).toBe('');
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    test('handles missing Firestore db reference', async () => {
+      jest.resetModules();
+      jest.mock('../client/js/firebase.js', () => ({
+        auth: { mockAuth: true },
+        db: null, // Simulate missing db
+      }));
+      require('../client/js/profile.js');
+
+      const user = { uid: 'user123', email: 'test@example.com' };
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      mockAuth.onAuthStateChanged.mock.calls[0][1](user);
+
+      await Promise.resolve();
+
+      expect(getDoc).not.toHaveBeenCalled();
+      expect(updateProfileSectionSpy).not.toHaveBeenCalled();
+      expect(setupEditProfileSpy).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error loading user data:', expect.any(Error));
+      expect(mockLocation.href).toBe('login.html');
+    });
+
+    test('logs detailed error message on Firestore failure', async () => {
+      const user = { uid: 'user123', email: 'test@example.com' };
+      const error = new Error('Permission denied');
+      error.stack = 'stack trace';
+      getDoc.mockRejectedValue(error);
+
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+      mockAuth.onAuthStateChanged.mock.calls[0][1](user);
+
+      await Promise.resolve();
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error loading user data:', error);
+      expect(mockLocation.href).toBe('login.html');
+    });
+  });
+
+  describe('Sign Out Functionality', () => {
+    beforeEach(() => {
+      jest.resetModules();
+      require('../client/js/profile.js');
+      mockAuth.signOut.mockReset();
+    });
+
+    test('signs out and redirects to index.html on button click', async () => {
+      mockAuth.signOut.mockResolvedValue();
+
+      const signOutBtn = document.getElementById('sign-out-btn');
+      signOutBtn.click();
+
+      await Promise.resolve();
+
+      expect(mockAuth.signOut).toHaveBeenCalled();
+      expect(mockLocation.href).toBe('index.html');
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    test('handles sign-out error', async () => {
+      mockAuth.signOut.mockRejectedValue(new Error('Sign out failed'));
+
+      const signOutBtn = document.getElementById('sign-out-btn');
+      signOutBtn.click();
+
+      await Promise.resolve();
+
+      expect(mockAuth.signOut).toHaveBeenCalled();
+      expect(mockLocation.href).toBe(''); // No redirect on error
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Sign out error:', expect.any(Error));
+    });
+
+    test('does not crash when sign-out button is missing', async () => {
+      // Remove sign-out button
+      const signOutBtn = document.getElementById('sign-out-btn');
+      signOutBtn.remove();
+
+      // Re-import to register event listener
+      jest.resetModules();
+      require('../client/js/profile.js');
+
+      await Promise.resolve();
+
+      expect(mockAuth.signOut).not.toHaveBeenCalled();
+      expect(mockLocation.href).toBe('');
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
   });
 });

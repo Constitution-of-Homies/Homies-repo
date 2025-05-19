@@ -31,6 +31,12 @@ describe('formatFileSize', () => {
   test('returns correct KB size', () => {
     expect(formatFileSize(1024)).toBe('1 KB');
   });
+  test('returns correct MB size', () => {
+    expect(formatFileSize(1048576)).toBe('1 MB');
+  });
+  test('returns correct GB size', () => {
+    expect(formatFileSize(1073741824)).toBe('1 GB');
+  });
 });
 
 describe('detectFileType', () => {
