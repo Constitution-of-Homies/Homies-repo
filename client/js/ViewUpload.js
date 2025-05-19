@@ -351,16 +351,29 @@ function setupEventListeners(userId) {
   }
 }
 
-async function displayFiles(userId) {
+function initializeFileDisplay() {
   const container = document.getElementById('files-container');
+  // Instead of replacing everything, just make sure the files-list section exists
+  // Only create the files-list if it doesn't exist already
+  let filesList = document.getElementById('files-list');
+  if (!filesList) {
+    filesList = document.createElement('section');
+    filesList.id = 'files-list';
+    container.appendChild(filesList);
+  }
+  return filesList;
+}
+
+async function displayFiles(userId) {
+  const filesList = initializeFileDisplay();
   const breadcrumbs = document.getElementById('directory-breadcrumbs');
-  if (!container || !breadcrumbs) {
+  if (!filesList || !breadcrumbs) {
     console.error("Required elements not found");
     return;
   }
 
   try {
-    container.innerHTML = '<section class="file-card">Loading...</section>';
+    filesList.innerHTML = '<section class="file-card">Loading...</section>';
     
     // Update breadcrumbs
     updateBreadcrumbs();
@@ -383,10 +396,10 @@ async function displayFiles(userId) {
     
     const filesSnapshot = await getDocs(filesQuery);
     
-    container.innerHTML = '';
+    filesList.innerHTML = '';
 
     if (foldersSnapshot.empty && filesSnapshot.empty) {
-      container.innerHTML = '<p class="empty-message">This folder is empty</p>';
+      filesList.innerHTML = '<p class="empty-message">This folder is empty</p>';
       return;
     }
 
@@ -419,7 +432,7 @@ async function displayFiles(userId) {
             <section class="file-menu hidden" id="folder-menu-${doc.id}">
               <button class="rename-folder-btn" data-folder-id="${doc.id}" data-current-name="${folder.name}">Rename</button>
               <button class="delete-folder-btn" data-folder-id="${doc.id}">Delete</button>
-          </section>
+    </section>
           </section>
         </section>
       `;
@@ -478,14 +491,11 @@ async function displayFiles(userId) {
       });
     });
 
-    
-
-
-    container.appendChild(groupCard);
+    filesList.appendChild(groupCard);
 
   } catch (error) {
     console.error("Error loading files:", error);
-    container.innerHTML = 
+    filesList.innerHTML = 
       '<p class="error-message">Error loading files. Please check console for details.</p>';
   }
 }
