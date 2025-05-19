@@ -47,7 +47,7 @@ document.body.appendChild(fileInput);
 
 // Utility functions
 export function formatFileSize(bytes) {
-  if (typeof bytes !== 'number') return 'Unknown size';
+  if (typeof bytes !== 'number') return ' ';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
   if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(1)} MB`;
