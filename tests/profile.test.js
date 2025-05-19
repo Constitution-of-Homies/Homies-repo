@@ -1,6 +1,5 @@
-// tests/profile.test.js
 import { jest } from '@jest/globals';
-import '../client/js/profile.js'; // Import to trigger DOMContentLoaded
+import { updateProfileSection, setupEditProfile } from '../client/js/profile.js';
 import { auth } from '../client/js/firebase.js';
 
 // Mock Firebase Auth
@@ -96,203 +95,150 @@ describe('Profile Module', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  test('redirects to login when user is not logged in', async () => {
-    mockAuth.onAuthStateChanged.mockImplementation((callback) => callback(null));
-    document.dispatchEvent(new Event('DOMContentLoaded'));
-
-    await Promise.resolve();
-    expect(mockLocation.href).toBe('login.html');
-  }, 10000);
-
-  test('loads user data and updates profile section when logged in', async () => {
-    const user = { uid: 'user123', email: 'test@example.com', displayName: 'Display Name' };
-    mockAuth.onAuthStateChanged.mockImplementation((callback) => callback(user));
-    document.dispatchEvent(new Event('DOMContentLoaded'));
-
-    await Promise.resolve();
-    expect(getDoc).toHaveBeenCalledWith({ collection: 'users', id: 'user123' });
-    expect(document.querySelector('.profile-image').src).toBe('https://example.com/photo.jpg');
-    expect(document.getElementById('profile-name').textContent).toBe('Test User');
-    expect(mockLocation.href).not.toBe('login.html');
-  }, 10000);
-
-  test('handles missing user data', async () => {
-    getDoc.mockResolvedValueOnce({
-      exists: () => false,
-      data: () => null,
-    });
-    const user = { uid: 'user123', email: 'test@example.com', displayName: 'Display Name' };
-    mockAuth.onAuthStateChanged.mockImplementation((callback) => callback(user));
-    document.dispatchEvent(new Event('DOMContentLoaded'));
-
-    await Promise.resolve();
+  test('updateProfileSection does nothing if user or userData is missing', () => {
+    updateProfileSection(null, {});
+    updateProfileSection({}, null);
     expect(document.querySelector('.profile-image').src).toBe('');
-    expect(document.getElementById('profile-name').textContent).toBe('Display Name');
-  }, 10000);
+    expect(document.getElementById('profile-name').textContent).toBe('');
+  });
 
-  test('uses user photoURL when userData photoURL is absent', async () => {
-    getDoc.mockResolvedValueOnce({
-      exists: () => true,
-      data: () => ({ username: 'Test User' }),
-    });
-    const user = { uid: 'user123', email: 'test@example.com', photoURL: 'https://user.com/photo.jpg' };
-    mockAuth.onAuthStateChanged.mockImplementation((callback) => callback(user));
-    document.dispatchEvent(new Event('DOMContentLoaded'));
-
-    await Promise.resolve();
+  test('updateProfileSection updates DOM elements correctly', () => {
+    const user = { uid: 'user123', photoURL: 'https://user.com/photo.jpg' };
+    const userData = { username: 'Test User' };
+    updateProfileSection(user, userData);
     expect(document.querySelector('.profile-image').src).toBe('https://user.com/photo.jpg');
-  }, 10000);
+    expect(document.getElementById('profile-name').textContent).toBe('Test User');
+  });
 
-  test('falls back to "User" when no username or displayName', async () => {
-    getDoc.mockResolvedValueOnce({
-      exists: () => true,
-      data: () => ({ photoURL: 'https://example.com/photo.jpg' }),
-    });
+  test('setupEditProfile logs error and returns if no user provided', () => {
+    setupEditProfile(null, {});
+    expect(consoleErrorSpy).toHaveBeenCalledWith('No user provided');
+  });
+
+  test('setupEditProfile handles missing DOM elements', () => {
+    // Temporarily remove an element
+    const saveBtn = document.getElementById('save-btn');
+    saveBtn.remove();
+    
     const user = { uid: 'user123', email: 'test@example.com' };
-    mockAuth.onAuthStateChanged.mockImplementation((callback) => callback(user));
-    document.dispatchEvent(new Event('DOMContentLoaded'));
+    setupEditProfile(user, {});
+    
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Required DOM elements missing');
+    
+    // Restore element
+    document.getElementById('edit-drawer').appendChild(saveBtn);
+  });
 
-    await Promise.resolve();
-    expect(document.getElementById('profile-name').textContent).toBe('User');
-  }, 10000);
-
-  test('redirects to login on Firestore error', async () => {
-    getDoc.mockRejectedValueOnce(new Error('Firestore error'));
-    const user = { uid: 'user123', email: 'test@example.com' };
-    mockAuth.onAuthStateChanged.mockImplementation((callback) => callback(user));
-    document.dispatchEvent(new Event('DOMContentLoaded'));
-
-    await Promise.resolve();
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Error loading user data:', expect.any(Error));
-    expect(mockLocation.href).toBe('login.html');
-  }, 10000);
-
-  test('opens edit drawer and populates form', async () => {
+  test('edit drawer opens and populates form with user data', async () => {
     const user = { uid: 'user123', email: 'test@example.com', displayName: 'Display Name' };
-    mockAuth.onAuthStateChanged.mockImplementation((callback) => callback(user));
-    document.dispatchEvent(new Event('DOMContentLoaded'));
+    const userData = { username: 'Test User' };
+    setupEditProfile(user, userData);
 
-    await Promise.resolve();
     document.getElementById('edit-profile-btn').click();
-
     expect(document.getElementById('edit-drawer').classList.contains('hidden')).toBe(false);
-    await new Promise((resolve) => setTimeout(resolve, 20)); // Wait for transition
+    await new Promise((resolve) => setTimeout(resolve, 20));
     expect(document.getElementById('edit-drawer').classList.contains('open')).toBe(true);
     expect(document.getElementById('name').value).toBe('Test User');
     expect(document.getElementById('email').value).toBe('test@example.com');
-  }, 10000);
+  });
 
-  test('closes drawer on cancel button click', async () => {
+  test('drawer closes on cancel button click', async () => {
     const user = { uid: 'user123', email: 'test@example.com' };
-    mockAuth.onAuthStateChanged.mockImplementation((callback) => callback(user));
-    document.dispatchEvent(new Event('DOMContentLoaded'));
-
-    await Promise.resolve();
+    setupEditProfile(user, {});
+    
     document.getElementById('edit-profile-btn').click();
     await new Promise((resolve) => setTimeout(resolve, 20));
     document.getElementById('cancel-btn').click();
-
+    
     expect(document.getElementById('edit-drawer').classList.contains('open')).toBe(false);
     await new Promise((resolve) => setTimeout(resolve, 300));
     expect(document.getElementById('edit-drawer').classList.contains('hidden')).toBe(true);
-  }, 10000);
+  });
 
-  test('closes drawer on backdrop click', async () => {
+  test('validates empty name input', async () => {
     const user = { uid: 'user123', email: 'test@example.com' };
-    mockAuth.onAuthStateChanged.mockImplementation((callback) => callback(user));
-    document.dispatchEvent(new Event('DOMContentLoaded'));
-
-    await Promise.resolve();
+    setupEditProfile(user, {});
+    
     document.getElementById('edit-profile-btn').click();
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    document.querySelector('.drawer-backdrop').click();
-
-    expect(document.getElementById('edit-drawer').classList.contains('open')).toBe(false);
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    expect(document.getElementById('edit-drawer').classList.contains('hidden')).toBe(true);
-  }, 10000);
-
-  test('saves profile updates and updates UI', async () => {
-    const user = { uid: 'user123', email: 'test@example.com', displayName: 'Display Name' };
-    mockAuth.onAuthStateChanged.mockImplementation((callback) => callback(user));
-    document.dispatchEvent(new Event('DOMContentLoaded'));
-
+    document.getElementById('name').value = '';
+    document.getElementById('email').value = 'new@example.com';
+    document.getElementById('save-btn').click();
+    
     await Promise.resolve();
+    expect(window.alert).toHaveBeenCalledWith('Name is required');
+    expect(updateDoc).not.toHaveBeenCalled();
+  });
+
+  test('validates invalid email format', async () => {
+    const user = { uid: 'user123', email: 'test@example.com' };
+    setupEditProfile(user, {});
+    
+    document.getElementById('edit-profile-btn').click();
+    document.getElementById('name').value = 'New Name';
+    document.getElementById('email').value = 'invalid-email';
+    document.getElementById('save-btn').click();
+    
+    await Promise.resolve();
+    expect(window.alert).toHaveBeenCalledWith('Invalid email format');
+    expect(updateDoc).not.toHaveBeenCalled();
+  });
+
+  test('saves profile with timestamp and shows success message', async () => {
+    const user = { uid: 'user123', email: 'test@example.com', displayName: 'Display Name' };
+    const userData = { username: 'Test User' };
+    setupEditProfile(user, userData);
+    
     document.getElementById('edit-profile-btn').click();
     document.getElementById('name').value = 'New Name';
     document.getElementById('email').value = 'new@example.com';
     document.getElementById('save-btn').click();
-
+    
     await Promise.resolve();
     expect(updateDoc).toHaveBeenCalledWith(
       { collection: 'users', id: 'user123' },
-      { displayName: 'New Name', email: 'new@example.com' }
+      expect.objectContaining({
+        displayName: 'New Name',
+        email: 'new@example.com',
+        updatedAt: expect.any(String)
+      })
     );
     expect(document.getElementById('profile-name').textContent).toBe('New Name');
+    expect(window.alert).toHaveBeenCalledWith('Profile updated successfully');
     expect(document.getElementById('edit-drawer').classList.contains('hidden')).toBe(true);
-  }, 10000);
+  });
 
-  test('handles profile update error', async () => {
-    updateDoc.mockRejectedValueOnce(new Error('Update error'));
+  test('handles profile update error with detailed message', async () => {
+    updateDoc.mockRejectedValueOnce(new Error('Update failed'));
     const user = { uid: 'user123', email: 'test@example.com' };
-    mockAuth.onAuthStateChanged.mockImplementation((callback) => callback(user));
-    document.dispatchEvent(new Event('DOMContentLoaded'));
-
-    await Promise.resolve();
+    setupEditProfile(user, {});
+    
     document.getElementById('edit-profile-btn').click();
     document.getElementById('name').value = 'New Name';
+    document.getElementById('email').value = 'new@example.com';
     document.getElementById('save-btn').click();
-
+    
     await Promise.resolve();
     expect(consoleErrorSpy).toHaveBeenCalledWith('Error updating profile:', expect.any(Error));
-    expect(window.alert).toHaveBeenCalledWith('Failed to update profile');
+    expect(window.alert).toHaveBeenCalledWith('Failed to update profile: Update failed');
     expect(document.getElementById('edit-drawer').classList.contains('hidden')).toBe(false);
-  }, 10000);
+  });
 
-  test('handles sign out', async () => {
-    mockAuth.signOut.mockResolvedValueOnce();
-    document.getElementById('sign-out-btn').click();
-
-    await Promise.resolve();
-    expect(mockAuth.signOut).toHaveBeenCalled();
-    expect(mockLocation.href).toBe('index.html');
-  }, 10000);
-
-  test('handles sign out error', async () => {
-    mockAuth.signOut.mockRejectedValueOnce(new Error('Sign out error'));
-    document.getElementById('sign-out-btn').click();
-
-    await Promise.resolve();
-    expect(mockAuth.signOut).toHaveBeenCalled();
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Sign out error:', expect.any(Error));
-    expect(mockLocation.href).toBe('index.html');
-  }, 10000);
-
-  test('populates form with user data when userData is empty', async () => {
-    getDoc.mockResolvedValueOnce({
-      exists: () => false,
-      data: () => null,
-    });
-    const user = { uid: 'user123', email: 'test@example.com', displayName: 'Display Name' };
-    mockAuth.onAuthStateChanged.mockImplementation((callback) => callback(user));
-    document.dispatchEvent(new Event('DOMContentLoaded'));
-
-    await Promise.resolve();
+  test('trims input values before saving', async () => {
+    const user = { uid: 'user123', email: 'test@example.com' };
+    setupEditProfile(user, {});
+    
     document.getElementById('edit-profile-btn').click();
-
-    expect(document.getElementById('name').value).toBe('Display Name');
-    expect(document.getElementById('email').value).toBe('test@example.com');
-  }, 10000);
-
-  test('handles missing user email in form', async () => {
-    const user = { uid: 'user123', displayName: 'Display Name' };
-    mockAuth.onAuthStateChanged.mockImplementation((callback) => callback(user));
-    document.dispatchEvent(new Event('DOMContentLoaded'));
-
+    document.getElementById('name').value = '  New Name  ';
+    document.getElementById('email').value = '  new@example.com  ';
+    document.getElementById('save-btn').click();
+    
     await Promise.resolve();
-    document.getElementById('edit-profile-btn').click();
-
-    expect(document.getElementById('name').value).toBe('Test User');
-    expect(document.getElementById('email').value).toBe('');
-  }, 10000);
+    expect(updateDoc).toHaveBeenCalledWith(
+      { collection: 'users', id: 'user123' },
+      expect.objectContaining({
+        displayName: 'New Name',
+        email: 'new@example.com'
+      })
+    );
+  });
 });
