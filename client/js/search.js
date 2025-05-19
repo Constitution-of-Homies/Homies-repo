@@ -532,4 +532,4 @@ function formatDate(date) {
     });
 }
 
-export { performSearch, clearSearchResults, formatFileSize, formatDate, getSimplifiedType, getFileIcon };
+export { performSearch, clearSearchResults, formatFileSize, formatDate, getSimplifiedType, getFileIcon, compareResults, calculateKeywordMatch, generateQueryEmbeddings, cosineSimilarity, isSameDay, isSameWeek, isSameMonth, matchesFilters, sortResults, displaySearchResults };

@@ -7,6 +7,13 @@ import {
   formatDate,
   getSimplifiedType,
   getFileIcon,
+  compareResults,
+  calculateKeywordMatch,
+  cosineSimilarity,
+  isSameDay, 
+  isSameMonth, 
+  isSameWeek,
+  matchesFilters,
 } from '../client/js/search.js';
 
 // Mock Firebase App
@@ -1282,4 +1289,709 @@ describe('Search Module', () => {
     const items = document.getElementById('search-results').querySelectorAll('.search-result-item');
     expect(items.length).toBe(1);
   }, 35000);
+});
+
+describe('compareResults Function', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockClear();
+  });
+
+  afterAll(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
+  test('compares results for relevance sort', () => {
+    const a = { similarity: 0.8 };
+    const b = { similarity: 0.9 };
+    expect(compareResults(a, b, 'relevance')).toBeGreaterThan(0);
+    expect(compareResults(b, a, 'relevance')).toBeLessThan(0);
+    expect(compareResults(a, a, 'relevance')).toBe(0);
+  });
+
+  test('compares results for date-desc sort', () => {
+    const a = { uploadedAt: { toDate: () => new Date('2025-05-18') } };
+    const b = { uploadedAt: { toDate: () => new Date('2025-05-17') } };
+    expect(compareResults(a, b, 'date-desc')).toBeLessThan(0);
+    expect(compareResults(b, a, 'date-desc')).toBeGreaterThan(0);
+    expect(compareResults(a, a, 'date-desc')).toBe(0);
+  });
+
+  test('compares results for date-asc sort', () => {
+    const a = { uploadedAt: { toDate: () => new Date('2025-05-17') } };
+    const b = { uploadedAt: { toDate: () => new Date('2025-05-18') } };
+    expect(compareResults(a, b, 'date-asc')).toBeLessThan(0);
+    expect(compareResults(b, a, 'date-asc')).toBeGreaterThan(0);
+    expect(compareResults(a, a, 'date-asc')).toBe(0);
+  });
+
+  test('compares results for title-asc sort', () => {
+    const a = { metadata: { title: 'Apple PDF' }, name: 'apple.pdf' };
+    const b = { metadata: { title: 'Zebra PDF' }, name: 'zebra.pdf' };
+    expect(compareResults(a, b, 'title-asc')).toBeLessThan(0);
+    expect(compareResults(b, a, 'title-asc')).toBeGreaterThan(0);
+    expect(compareResults(a, a, 'title-asc')).toBe(0);
+  });
+
+  test('compares results for title-desc sort', () => {
+    const a = { metadata: { title: 'Apple PDF' }, name: 'apple.pdf' };
+    const b = { metadata: { title: 'Zebra PDF' }, name: 'zebra.pdf' };
+    expect(compareResults(a, b, 'title-desc')).toBeGreaterThan(0);
+    expect(compareResults(b, a, 'title-desc')).toBeLessThan(0);
+    expect(compareResults(a, a, 'title-desc')).toBe(0);
+  });
+
+  test('compares results for size-asc sort', () => {
+    const a = { size: 1024 };
+    const b = { size: 2048 };
+    expect(compareResults(a, b, 'size-asc')).toBeLessThan(0);
+    expect(compareResults(b, a, 'size-asc')).toBeGreaterThan(0);
+    expect(compareResults(a, a, 'size-asc')).toBe(0);
+  });
+
+  test('compares results for size-desc sort', () => {
+    const a = { size: 1024 };
+    const b = { size: 2048 };
+    expect(compareResults(a, b, 'size-desc')).toBeGreaterThan(0);
+    expect(compareResults(b, a, 'size-desc')).toBeLessThan(0);
+    expect(compareResults(a, a, 'size-desc')).toBe(0);
+  });
+
+  test('handles missing fields for relevance sort', () => {
+    const a = { similarity: null };
+    const b = { similarity: 0.9 };
+    expect(compareResults(a, b, 'relevance')).toBeGreaterThan(0);
+    expect(compareResults(b, a, 'relevance')).toBeLessThan(0);
+    expect(compareResults(a, a, 'relevance')).toBe(0);
+  });
+
+  test('handles missing uploadedAt for date sorts', () => {
+    const a = { uploadedAt: null };
+    const b = { uploadedAt: { toDate: () => new Date('2025-05-18') } };
+    expect(compareResults(a, b, 'date-desc')).toBeGreaterThan(0); // null treated as now
+    expect(compareResults(b, a, 'date-desc')).toBeLessThan(0);
+    expect(compareResults(a, a, 'date-desc')).toBe(0);
+    expect(compareResults(a, b, 'date-asc')).toBeLessThan(0);
+    expect(compareResults(b, a, 'date-asc')).toBeGreaterThan(0);
+  });
+
+  test('handles missing metadata and name for title sorts', () => {
+    const a = { metadata: null, name: null };
+    const b = { metadata: { title: 'Zebra PDF' }, name: 'zebra.pdf' };
+    expect(compareResults(a, b, 'title-asc')).toBeLessThan(0); // '' vs 'Zebra PDF'
+    expect(compareResults(b, a, 'title-asc')).toBeGreaterThan(0);
+    expect(compareResults(a, a, 'title-asc')).toBe(0);
+    expect(compareResults(a, b, 'title-desc')).toBeGreaterThan(0);
+    expect(compareResults(b, a, 'title-desc')).toBeLessThan(0);
+  });
+
+  test('handles missing size for size sorts', () => {
+    const a = { size: null };
+    const b = { size: 2048 };
+    expect(compareResults(a, b, 'size-asc')).toBeLessThan(0); // 0 vs 2048
+    expect(compareResults(b, a, 'size-asc')).toBeGreaterThan(0);
+    expect(compareResults(a, a, 'size-asc')).toBe(0);
+    expect(compareResults(a, b, 'size-desc')).toBeGreaterThan(0);
+    expect(compareResults(b, a, 'size-desc')).toBeLessThan(0);
+  });
+
+  test('handles invalid sort option by defaulting to relevance', () => {
+    const a = { similarity: 0.8 };
+    const b = { similarity: 0.9 };
+    expect(compareResults(a, b, 'invalid')).toBeGreaterThan(0);
+    expect(compareResults(b, a, 'invalid')).toBeLessThan(0);
+    expect(compareResults(a, a, 'invalid')).toBe(0);
+  });
+
+  test('handles negative size values', () => {
+    const a = { size: -1024 };
+    const b = { size: 2048 };
+    expect(compareResults(a, b, 'size-asc')).toBeLessThan(0);
+    expect(compareResults(b, a, 'size-asc')).toBeGreaterThan(0);
+    expect(compareResults(a, a, 'size-asc')).toBe(0);
+  });
+
+  test('handles equal dates with millisecond precision', () => {
+    const date = new Date('2025-05-18');
+    const a = { uploadedAt: { toDate: () => date } };
+    const b = { uploadedAt: { toDate: () => new Date(date.getTime()) } };
+    expect(compareResults(a, b, 'date-desc')).toBe(0);
+    expect(compareResults(a, b, 'date-asc')).toBe(0);
+  });
+});
+
+describe('calculateKeywordMatch Function', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockClear();
+  });
+
+  afterAll(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
+  test('calculates score for keyword matches in content', () => {
+    const searchTerm = 'test';
+    const content = 'test document test content';
+    const file = { metadata: { title: '', tags: [] } };
+    expect(calculateKeywordMatch(searchTerm, content, file)).toBe(0.1); // 2 occurrences * 0.05
+  });
+
+  test('calculates score for keyword matches in title', () => {
+    const searchTerm = 'test';
+    const content = '';
+    const file = { metadata: { title: 'test title', tags: [] } };
+    expect(calculateKeywordMatch(searchTerm, content, file)).toBe(0.05); // 1 occurrence * 0.05
+  });
+
+  test('calculates score for keyword matches in tags', () => {
+    const searchTerm = 'test';
+    const content = '';
+    const file = { metadata: { title: '', tags: ['test', 'other'] } };
+    expect(calculateKeywordMatch(searchTerm, content, file)).toBe(0.05); // 1 occurrence * 0.05
+  });
+
+  test('gives full score for short documents with any match', () => {
+    const searchTerm = 'test';
+    const content = 'test doc'; // 2 words
+    const file = { metadata: { title: '', tags: [] } };
+    expect(calculateKeywordMatch(searchTerm, content, file)).toBe(1.0); // Short document with match
+  });
+
+  test('ignores stop words in search term', () => {
+    const searchTerm = 'the and test';
+    const content = 'test document';
+    const file = { metadata: { title: '', tags: [] } };
+    expect(calculateKeywordMatch(searchTerm, content, file)).toBe(0.05); // Only 'test' matches
+  });
+
+  test('returns 0 for empty search term', () => {
+    const searchTerm = '';
+    const content = 'test document';
+    const file = { metadata: { title: 'test title', tags: ['test'] } };
+    expect(calculateKeywordMatch(searchTerm, content, file)).toBe(0);
+  });
+
+  test('returns 0 for search term with only stop words', () => {
+    const searchTerm = 'the and';
+    const content = 'test document';
+    const file = { metadata: { title: 'test title', tags: ['test'] } };
+    expect(calculateKeywordMatch(searchTerm, content, file)).toBe(0);
+  });
+
+  test('handles missing content, using title and tags', () => {
+    const searchTerm = 'test';
+    const content = '';
+    const file = { metadata: { title: 'test title', tags: ['test'] } };
+    expect(calculateKeywordMatch(searchTerm, content, file)).toBe(0.1); // 2 occurrences * 0.05
+  });
+
+  test('handles missing metadata', () => {
+    const searchTerm = 'test';
+    const content = 'test document';
+    const file = { metadata: null };
+    expect(calculateKeywordMatch(searchTerm, content, file)).toBe(0.05); // 1 occurrence in content
+  });
+
+  test('handles malformed tags', () => {
+    const searchTerm = 'test';
+    const content = '';
+    const file = { metadata: { title: '', tags: null } };
+    expect(calculateKeywordMatch(searchTerm, content, file)).toBe(0); // No matches
+  });
+
+  test('returns 0 when no matches are found', () => {
+    const searchTerm = 'nonexistent';
+    const content = 'test document';
+    const file = { metadata: { title: 'title', tags: ['other'] } };
+    expect(calculateKeywordMatch(searchTerm, content, file)).toBe(0);
+  });
+
+  test('caps score at 1.0 for many occurrences', () => {
+    const searchTerm = 'test';
+    const content = 'test '.repeat(30); // 30 occurrences
+    const file = { metadata: { title: '', tags: [] } };
+    expect(calculateKeywordMatch(searchTerm, content, file)).toBe(1.0); // Capped at 1.0
+  });
+
+  test('handles multi-word search term', () => {
+    const searchTerm = 'test project';
+    const content = 'test document project';
+    const file = { metadata: { title: '', tags: [] } };
+    expect(calculateKeywordMatch(searchTerm, content, file)).toBe(0.1); // 1 'test' + 1 'project' = 2 * 0.05
+  });
+
+  test('matches whole words only', () => {
+    const searchTerm = 'test';
+    const content = 'testing document';
+    const file = { metadata: { title: '', tags: [] } };
+    expect(calculateKeywordMatch(searchTerm, content, file)).toBe(0); // No whole-word match for 'test'
+  });
+
+  test('handles case-insensitive matching', () => {
+    const searchTerm = 'Test';
+    const content = 'test document';
+    const file = { metadata: { title: 'TEST Title', tags: ['tEsT'] } };
+    expect(calculateKeywordMatch(searchTerm, content, file)).toBe(0.15); // 3 occurrences * 0.05
+  });
+});
+
+describe('cosineSimilarity Function', () => {
+  test('returns 1 for identical vectors', () => {
+    const vecA = [1, 2, 3];
+    const vecB = [1, 2, 3];
+    expect(cosineSimilarity(vecA, vecB)).toBeCloseTo(1.0, 10);
+  });
+
+  test('returns -1 for opposite vectors', () => {
+    const vecA = [1, 2, 3];
+    const vecB = [-1, -2, -3];
+    expect(cosineSimilarity(vecA, vecB)).toBeCloseTo(-1.0, 10);
+  });
+
+  test('returns 0 for orthogonal vectors', () => {
+    const vecA = [1, 0];
+    const vecB = [0, 1];
+    expect(cosineSimilarity(vecA, vecB)).toBeCloseTo(0, 10);
+  });
+
+  test('calculates similarity for partially similar vectors', () => {
+    const vecA = [1, 2, 3];
+    const vecB = [2, 4, 5];
+    const dotProduct = 1 * 2 + 2 * 4 + 3 * 5; // 25
+    const normA = Math.sqrt(1 * 1 + 2 * 2 + 3 * 3); // sqrt(14)
+    const normB = Math.sqrt(2 * 2 + 4 * 4 + 5 * 5); // sqrt(45)
+    const expected = dotProduct / (normA * normB); // ~0.974
+    expect(cosineSimilarity(vecA, vecB)).toBeCloseTo(expected, 10);
+  });
+
+  test('returns 0 for empty vector A', () => {
+    const vecA = [];
+    const vecB = [1, 2, 3];
+    expect(cosineSimilarity(vecA, vecB)).toBe(0);
+  });
+
+  test('returns 0 for empty vector B', () => {
+    const vecA = [1, 2, 3];
+    const vecB = [];
+    expect(cosineSimilarity(vecA, vecB)).toBe(0);
+  });
+
+  test('returns 0 for vectors of different lengths', () => {
+    const vecA = [1, 2];
+    const vecB = [1, 2, 3];
+    expect(cosineSimilarity(vecA, vecB)).toBe(0);
+  });
+
+  test('returns 0 for zero vector A', () => {
+    const vecA = [0, 0, 0];
+    const vecB = [1, 2, 3];
+    expect(cosineSimilarity(vecA, vecB)).toBe(0);
+  });
+
+  test('returns 0 for zero vector B', () => {
+    const vecA = [1, 2, 3];
+    const vecB = [0, 0, 0];
+    expect(cosineSimilarity(vecA, vecB)).toBe(0);
+  });
+
+  test('handles negative values in vectors', () => {
+    const vecA = [-1, 2, -3];
+    const vecB = [-2, 4, -6];
+    const dotProduct = (-1) * (-2) + 2 * 4 + (-3) * (-6); // 28
+    const normA = Math.sqrt((-1) * (-1) + 2 * 2 + (-3) * (-3)); // sqrt(14)
+    const normB = Math.sqrt((-2) * (-2) + 4 * 4 + (-6) * (-6)); // sqrt(56)
+    const expected = dotProduct / (normA * normB); // ~1.0
+    expect(cosineSimilarity(vecA, vecB)).toBeCloseTo(expected, 10);
+  });
+
+  test('handles floating-point precision', () => {
+    const vecA = [0.1, 0.2, 0.3];
+    const vecB = [0.2, 0.4, 0.6];
+    const dotProduct = 0.1 * 0.2 + 0.2 * 0.4 + 0.3 * 0.6; // 0.28
+    const normA = Math.sqrt(0.1 * 0.1 + 0.2 * 0.2 + 0.3 * 0.3); // sqrt(0.14)
+    const normB = Math.sqrt(0.2 * 0.2 + 0.4 * 0.4 + 0.6 * 0.6); // sqrt(0.56)
+    const expected = dotProduct / (normA * normB); // ~1.0
+    expect(cosineSimilarity(vecA, vecB)).toBeCloseTo(expected, 10);
+  });
+
+  test('handles non-array inputs gracefully', () => {
+    expect(cosineSimilarity(null, [1, 2, 3])).toBe(0);
+    expect(cosineSimilarity([1, 2, 3], undefined)).toBe(0);
+    expect(cosineSimilarity('not an array', [1, 2, 3])).toBe(0);
+  });
+
+  test('handles non-numeric values in vectors', () => {
+    const vecA = [1, 'invalid', 3];
+    const vecB = [1, 2, 3];
+    const dotProduct = 1 * 1 + 0 * 2 + 3 * 3; // 10
+    const normA = Math.sqrt(1 * 1 + 0 * 0 + 3 * 3); // sqrt(10)
+    const normB = Math.sqrt(1 * 1 + 2 * 2 + 3 * 3); // sqrt(14)
+    const expected = dotProduct / (normA * normB);
+    expect(cosineSimilarity(vecA, vecB)).toBeCloseTo(expected, 10);
+  });
+});
+
+describe('Date Utility Functions', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockClear();
+  });
+
+  afterAll(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
+  describe('isSameDay', () => {
+    test('returns true for same day, different times', () => {
+      const dateA = new Date('2025-05-19T10:00:00');
+      const dateB = new Date('2025-05-19T15:30:00');
+      expect(isSameDay(dateA, dateB)).toBe(true);
+    });
+
+    test('returns false for different days', () => {
+      const dateA = new Date('2025-05-19');
+      const dateB = new Date('2025-05-20');
+      expect(isSameDay(dateA, dateB)).toBe(false);
+    });
+
+    test('returns false for different months', () => {
+      const dateA = new Date('2025-05-19');
+      const dateB = new Date('2025-06-19');
+      expect(isSameDay(dateA, dateB)).toBe(false);
+    });
+
+    test('returns false for different years', () => {
+      const dateA = new Date('2025-05-19');
+      const dateB = new Date('2024-05-19');
+      expect(isSameDay(dateA, dateB)).toBe(false);
+    });
+
+    test('handles month boundary', () => {
+      const dateA = new Date('2025-05-31');
+      const dateB = new Date('2025-06-01');
+      expect(isSameDay(dateA, dateB)).toBe(false);
+    });
+
+    test('handles invalid dates', () => {
+      const dateA = new Date('invalid');
+      const dateB = new Date('2025-05-19');
+      expect(isSameDay(dateA, dateB)).toBe(false);
+      expect(isSameDay(dateB, dateA)).toBe(false);
+      expect(isSameDay(dateA, dateA)).toBe(false);
+    });
+
+    test('handles leap year edge case', () => {
+      const dateA = new Date('2024-02-29');
+      const dateB = new Date('2024-02-29');
+      expect(isSameDay(dateA, dateB)).toBe(true);
+      const dateC = new Date('2024-03-01');
+      expect(isSameDay(dateA, dateC)).toBe(false);
+    });
+  });
+
+  describe('isSameWeek', () => {
+    test('returns true for dates in same ISO week', () => {
+      const dateA = new Date('2025-05-19'); // Monday
+      const dateB = new Date('2025-05-25'); // Sunday
+      expect(isSameWeek(dateA, dateB)).toBe(true);
+    });
+
+    test('returns false for dates in different weeks', () => {
+      const dateA = new Date('2025-05-19'); // Monday, week 21
+      const dateB = new Date('2025-05-26'); // Monday, week 22
+      expect(isSameWeek(dateA, dateB)).toBe(false);
+    });
+
+    test('handles week boundary', () => {
+      const dateA = new Date('2025-05-25'); // Sunday, week 21
+      const dateB = new Date('2025-05-26'); // Monday, week 22
+      expect(isSameWeek(dateA, dateB)).toBe(false);
+    });
+
+    test('handles year boundary', () => {
+      const dateA = new Date('2024-12-30'); // Monday, week 1 of 2025
+      const dateB = new Date('2025-01-05'); // Sunday, week 1 of 2025
+      expect(isSameWeek(dateA, dateB)).toBe(true);
+      const dateC = new Date('2024-12-29'); // Sunday, week 52 of 2024
+      expect(isSameWeek(dateA, dateC)).toBe(false);
+    });
+
+    test('handles invalid dates', () => {
+      const dateA = new Date('invalid');
+      const dateB = new Date('2025-05-19');
+      expect(isSameWeek(dateA, dateB)).toBe(false);
+      expect(isSameWeek(dateB, dateA)).toBe(false);
+      expect(isSameWeek(dateA, dateA)).toBe(false);
+    });
+
+    test('handles leap year week', () => {
+      const dateA = new Date('2024-02-26'); // Monday, week 9
+      const dateB = new Date('2024-03-03'); // Sunday, week 9
+      expect(isSameWeek(dateA, dateB)).toBe(true);
+      const dateC = new Date('2024-03-04'); // Monday, week 10
+      expect(isSameWeek(dateA, dateC)).toBe(false);
+    });
+  });
+
+  describe('isSameMonth', () => {
+    test('returns true for same month and year', () => {
+      const dateA = new Date('2025-05-01');
+      const dateB = new Date('2025-05-31');
+      expect(isSameMonth(dateA, dateB)).toBe(true);
+    });
+
+    test('returns false for different months', () => {
+      const dateA = new Date('2025-05-31');
+      const dateB = new Date('2025-06-01');
+      expect(isSameMonth(dateA, dateB)).toBe(false);
+    });
+
+    test('returns false for different years', () => {
+      const dateA = new Date('2025-05-19');
+      const dateB = new Date('2024-05-19');
+      expect(isSameMonth(dateA, dateB)).toBe(false);
+    });
+
+    test('handles year boundary', () => {
+      const dateA = new Date('2024-12-31');
+      const dateB = new Date('2025-01-01');
+      expect(isSameMonth(dateA, dateB)).toBe(false);
+    });
+
+    test('handles invalid dates', () => {
+      const dateA = new Date('invalid');
+      const dateB = new Date('2025-05-19');
+      expect(isSameMonth(dateA, dateB)).toBe(false);
+      expect(isSameMonth(dateB, dateA)).toBe(false);
+      expect(isSameMonth(dateA, dateA)).toBe(false);
+    });
+
+    test('handles leap year month', () => {
+      const dateA = new Date('2024-02-01');
+      const dateB = new Date('2024-02-29');
+      expect(isSameMonth(dateA, dateB)).toBe(true);
+      const dateC = new Date('2024-03-01');
+      expect(isSameMonth(dateA, dateC)).toBe(false);
+    });
+  });
+});
+
+let currentFilters = {};
+
+describe('matchesFilters Function', () => {
+  beforeEach(() => {
+    // Reset currentFilters before each test
+    let currentFilters = {};
+    // Ensure global currentFilters mock is set
+    jest.spyOn(global, 'currentFilters', 'get').mockReturnValue(currentFilters);
+  });
+
+  test('returns true when no filters are applied', () => {
+    const file = { type: 'application/pdf', metadata: { category: 'doc' }, uploadedAt: { toDate: () => new Date('2025-05-19') }, tags: ['test'] };
+    expect(matchesFilters(file)).toBe(true);
+  });
+
+  describe('Type Filter', () => {
+    test('returns true when type matches', () => {
+      currentFilters.type = 'pdf';
+      const file = { type: 'application/pdf' };
+      jest.spyOn(global, 'getSimplifiedType').mockReturnValue('pdf');
+      expect(matchesFilters(file)).toBe(true);
+    });
+
+    test('returns false when type does not match', () => {
+      currentFilters.type = 'pdf';
+      const file = { type: 'image/jpeg' };
+      jest.spyOn(global, 'getSimplifiedType').mockReturnValue('image');
+      expect(matchesFilters(file)).toBe(false);
+    });
+  });
+
+  describe('Category Filter', () => {
+    test('returns true when category matches', () => {
+      currentFilters.category = 'doc';
+      const file = { metadata: { category: 'doc' } };
+      expect(matchesFilters(file)).toBe(true);
+    });
+
+    test('returns false when category does not match', () => {
+      currentFilters.category = 'doc';
+      const file = { metadata: { category: 'image' } };
+      expect(matchesFilters(file)).toBe(false);
+    });
+
+    test('returns false when metadata is missing', () => {
+      currentFilters.category = 'doc';
+      const file = { metadata: null };
+      expect(matchesFilters(file)).toBe(false);
+    });
+  });
+
+  describe('Date Filter', () => {
+    const now = new Date('2025-05-19');
+    const mockNow = jest.spyOn(global, 'Date').mockImplementation(() => now);
+
+    afterEach(() => {
+      mockNow.mockReset();
+    });
+
+    test('returns true for same day', () => {
+      currentFilters.date = 'day';
+      const file = { uploadedAt: { toDate: () => new Date('2025-05-19T10:00:00') } };
+      jest.spyOn(global, 'isSameDay').mockReturnValue(true);
+      expect(matchesFilters(file)).toBe(true);
+    });
+
+    test('returns false for different day', () => {
+      currentFilters.date = 'day';
+      const file = { uploadedAt: { toDate: () => new Date('2025-05-20') } };
+      jest.spyOn(global, 'isSameDay').mockReturnValue(false);
+      expect(matchesFilters(file)).toBe(false);
+    });
+
+    test('returns true for same week', () => {
+      currentFilters.date = 'week';
+      const file = { uploadedAt: { toDate: () => new Date('2025-05-25') } };
+      jest.spyOn(global, 'isSameWeek').mockReturnValue(true);
+      expect(matchesFilters(file)).toBe(true);
+    });
+
+    test('returns false for different week', () => {
+      currentFilters.date = 'week';
+      const file = { uploadedAt: { toDate: () => new Date('2025-05-26') } };
+      jest.spyOn(global, 'isSameWeek').mockReturnValue(false);
+      expect(matchesFilters(file)).toBe(false);
+    });
+
+    test('returns true for same month', () => {
+      currentFilters.date = 'month';
+      const file = { uploadedAt: { toDate: () => new Date('2025-05-31') } };
+      jest.spyOn(global, 'isSameMonth').mockReturnValue(true);
+      expect(matchesFilters(file)).toBe(true);
+    });
+
+    test('returns false for different month', () => {
+      currentFilters.date = 'month';
+      const file = { uploadedAt: { toDate: () => new Date('2025-06-01') } };
+      jest.spyOn(global, 'isSameMonth').mockReturnValue(false);
+      expect(matchesFilters(file)).toBe(false);
+    });
+
+    test('returns true for same year', () => {
+      currentFilters.date = 'year';
+      const file = { uploadedAt: { toDate: () => new Date('2025-12-31') } };
+      expect(matchesFilters(file)).toBe(true);
+    });
+
+    test('returns false for different year', () => {
+      currentFilters.date = 'year';
+      const file = { uploadedAt: { toDate: () => new Date('2024-12-31') } };
+      expect(matchesFilters(file)).toBe(false);
+    });
+
+    test('returns true when uploadedAt is missing', () => {
+      currentFilters.date = 'day';
+      const file = { uploadedAt: null };
+      expect(matchesFilters(file)).toBe(true);
+    });
+  });
+
+  describe('Tags Filter', () => {
+    test('returns true when all tags match', () => {
+      currentFilters.tags = 'test, project';
+      const file = { metadata: { tags: ['test', 'project', 'other'] } };
+      expect(matchesFilters(file)).toBe(true);
+    });
+
+    test('returns false when some tags do not match', () => {
+      currentFilters.tags = 'test, missing';
+      const file = { metadata: { tags: ['test', 'project'] } };
+      expect(matchesFilters(file)).toBe(false);
+    });
+
+    test('handles case-insensitive tag matching', () => {
+      currentFilters.tags = 'Test, Project';
+      const file = { metadata: { tags: ['test', 'project'] } };
+      expect(matchesFilters(file)).toBe(true);
+    });
+
+    test('returns false when metadata is missing', () => {
+      currentFilters.tags = 'test';
+      const file = { metadata: null };
+      expect(matchesFilters(file)).toBe(false);
+    });
+
+    test('returns false when tags are missing', () => {
+      currentFilters.tags = 'test';
+      const file = { metadata: { tags: null } };
+      expect(matchesFilters(file)).toBe(false);
+    });
+
+    test('handles empty tag terms', () => {
+      currentFilters.tags = 'test, , project';
+      const file = { metadata: { tags: ['test', 'project'] } };
+      expect(matchesFilters(file)).toBe(true);
+    });
+  });
+
+  describe('Combined Filters', () => {
+    test('returns true when all filters match', () => {
+      currentFilters = {
+        type: 'pdf',
+        category: 'doc',
+        date: 'month',
+        tags: 'test, project'
+      };
+      const file = {
+        type: 'application/pdf',
+        metadata: { category: 'doc', tags: ['test', 'project'] },
+        uploadedAt: { toDate: () => new Date('2025-05-31') }
+      };
+      jest.spyOn(global, 'getSimplifiedType').mockReturnValue('pdf');
+      jest.spyOn(global, 'isSameMonth').mockReturnValue(true);
+      expect(matchesFilters(file)).toBe(true);
+    });
+
+    test('returns false when one filter fails', () => {
+      currentFilters = {
+        type: 'pdf',
+        category: 'doc',
+        date: 'month',
+        tags: 'test, project'
+      };
+      const file = {
+        type: 'image/jpeg',
+        metadata: { category: 'doc', tags: ['test', 'project'] },
+        uploadedAt: { toDate: () => new Date('2025-05-31') }
+      };
+      jest.spyOn(global, 'getSimplifiedType').mockReturnValue('image');
+      jest.spyOn(global, 'isSameMonth').mockReturnValue(true);
+      expect(matchesFilters(file)).toBe(false);
+    });
+  });
+
+  describe('Edge Cases', () => {
+    test('handles invalid date filter value', () => {
+      currentFilters.date = 'invalid';
+      const file = { uploadedAt: { toDate: () => new Date('2025-05-19') } };
+      expect(matchesFilters(file)).toBe(true); // Invalid date filter is ignored
+    });
+
+    test('handles malformed uploadedAt', () => {
+      currentFilters.date = 'day';
+      const file = { uploadedAt: { toDate: () => new Date('invalid') } };
+      jest.spyOn(global, 'isSameDay').mockReturnValue(false);
+      expect(matchesFilters(file)).toBe(false);
+    });
+  });
 });
