@@ -961,7 +961,7 @@ async function deleteFile(docId, blobName) {
           },
           body: JSON.stringify({ 
             blobName: fileData.url.split('/').pop() // Extract blob name from URL
-          })
+          }) 
         });
         
         if (!response.ok) {

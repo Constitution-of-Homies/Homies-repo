@@ -322,7 +322,7 @@ async function uploadFiles() {
 }
 
 // Function to call the processFile API
-async function processFile(fileUrl, fileType) {
+export async function processFile(fileUrl, fileType) {
   console.log('processFile called with:', { fileUrl, fileType });
 
   // Map detected file type to processFile API expected types

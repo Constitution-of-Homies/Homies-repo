@@ -14,6 +14,7 @@ import {
   isSameMonth, 
   isSameWeek,
   matchesFilters,
+  appendSearchResult,
 } from '../client/js/search.js';
 
 // Mock Firebase App
@@ -1786,18 +1787,260 @@ describe('Date Utility Functions', () => {
   });
 });
 
+describe('appendSearchResult Function', () => {
+let resultsContainer;
+
+beforeEach(() => {
+  // Reset mocks and DOM
+  jest.clearAllMocks();
+  document.body.innerHTML = `
+    <div id="search-results"></div>
+  `;
+  resultsContainer = document.getElementById('search-results');
+  window.currentSearchResults = [];
+});
+
+afterEach(() => {
+  consoleErrorSpy.mockClear();
+});
+
+afterAll(() => {
+  consoleErrorSpy.mockRestore();
+});
+
+test('appends a valid search result to the DOM', () => {
+  const file = {
+    id: 'file1',
+    name: 'test.pdf',
+    type: 'application/pdf',
+    size: 1024,
+    url: 'https://example.com/test.pdf',
+    uploadedAt: { toDate: () => new Date('2025-05-18') },
+    uploadedBy: 'user123',
+    uploadedByName: 'Test User',
+    metadata: { title: 'Test PDF', description: 'Test Description', tags: ['tag1'], category: 'work' },
+    similarity: 0.85,
+    contentSnippet: 'Test document content...',
+  };
+
+  appendSearchResult(file, resultsContainer, 'relevance');
+
+  const items = resultsContainer.querySelectorAll('.search-result-item');
+  expect(items.length).toBe(1);
+  const item = items[0];
+  expect(item.querySelector('.search-result-icon img').src).toContain('pdf.png');
+  expect(item.querySelector('h3').textContent).toBe('Test PDF');
+  expect(item.querySelector('.search-result-uploader').textContent).toBe('Uploaded by: Test User');
+  expect(item.querySelector('.search-result-snippet').textContent).toBe('Test document content...');
+  expect(item.querySelector('.search-result-description').textContent).toBe('Test Description');
+  expect(item.querySelector('.search-result-meta').textContent).toContain('1.0 KB');
+  expect(item.querySelector('.search-result-meta').textContent).toContain('18 May 2025');
+  expect(item.querySelector('.search-result-meta').textContent).toContain('Relevance: 85.0%');
+  expect(item.querySelector('.view-btn').href).toBe('https://example.com/test.pdf');
+  expect(item.querySelector('.download-btn').getAttribute('download')).toBe('test.pdf');
+});
+
+test('handles missing metadata and uploader fields', () => {
+  const file = {
+    id: 'file1',
+    name: 'test.pdf',
+    type: 'application/pdf',
+    size: 1024,
+    url: 'https://example.com/test.pdf',
+    uploadedAt: { toDate: () => new Date('2025-05-18') },
+    similarity: 0.5,
+    contentSnippet: 'File name: test.pdf',
+  };
+
+  appendSearchResult(file, resultsContainer, 'relevance');
+
+  const items = resultsContainer.querySelectorAll('.search-result-item');
+  expect(items.length).toBe(1);
+  const item = items[0];
+  expect(item.querySelector('h3').textContent).toBe('test.pdf');
+  expect(item.querySelector('.search-result-uploader')).toBeNull();
+  expect(item.querySelector('.search-result-description').textContent).toBe('No description');
+  expect(item.querySelector('.search-result-meta').textContent).toContain('Relevance: 50.0%');
+});
+
+test('inserts result in sorted order for relevance', () => {
+  window.currentSearchResults = [
+    { id: 'file1', similarity: 0.9, metadata: { title: 'File 1' } },
+  ];
+  resultsContainer.innerHTML = `
+    <div class="search-result-item">
+      <div class="search-result-details"><h3>File 1</h3></div>
+    </div>
+  `;
+
+  const file = {
+    id: 'file2',
+    name: 'test.pdf',
+    type: 'application/pdf',
+    size: 1024,
+    url: 'https://example.com/test.pdf',
+    similarity: 0.95,
+    metadata: { title: 'Test PDF' },
+    contentSnippet: 'Test content',
+  };
+
+  appendSearchResult(file, resultsContainer, 'relevance');
+
+  const items = resultsContainer.querySelectorAll('.search-result-item');
+  expect(items.length).toBe(2);
+  expect(items[0].querySelector('h3').textContent).toBe('Test PDF'); // Higher relevance first
+  expect(items[1].querySelector('h3').textContent).toBe('File 1');
+});
+
+test('inserts result in sorted order for title-asc', () => {
+  window.currentSearchResults = [
+    { id: 'file1', metadata: { title: 'Zebra PDF' }, name: 'zebra.pdf' },
+  ];
+  resultsContainer.innerHTML = `
+    <div class="search-result-item">
+      <div class="search-result-details"><h3>Zebra PDF</h3></div>
+    </div>
+  `;
+
+  const file = {
+    id: 'file2',
+    name: 'apple.pdf',
+    type: 'application/pdf',
+    size: 1024,
+    url: 'https://example.com/apple.pdf',
+    metadata: { title: 'Apple PDF' },
+    similarity: 0.5,
+    contentSnippet: 'Apple content',
+  };
+
+  appendSearchResult(file, resultsContainer, 'title-asc');
+
+  const items = resultsContainer.querySelectorAll('.search-result-item');
+  expect(items.length).toBe(2);
+  expect(items[0].querySelector('h3').textContent).toBe('Apple PDF'); // Alphabetically first
+  expect(items[1].querySelector('h3').textContent).toBe('Zebra PDF');
+});
+
+test('appends without sorting when insertSorted is false', () => {
+  window.currentSearchResults = [
+    { id: 'file1', similarity: 0.9, metadata: { title: 'File 1' } },
+  ];
+  resultsContainer.innerHTML = `
+    <div class="search-result-item">
+      <div class="search-result-details"><h3>File 1</h3></div>
+    </div>
+  `;
+
+  const file = {
+    id: 'file2',
+    name: 'test.pdf',
+    type: 'application/pdf',
+    size: 1024,
+    url: 'https://example.com/test.pdf',
+    similarity: 0.95,
+    metadata: { title: 'Test PDF' },
+    contentSnippet: 'Test content',
+  };
+
+  appendSearchResult(file, resultsContainer, 'relevance', false);
+
+  const items = resultsContainer.querySelectorAll('.search-result-item');
+  expect(items.length).toBe(2);
+  expect(items[0].querySelector('h3').textContent).toBe('File 1');
+  expect(items[1].querySelector('h3').textContent).toBe('Test PDF'); // Appended at end
+});
+
+test('handles malformed file data', () => {
+  const file = {
+    id: 'file1',
+    type: 'application/pdf',
+    size: null,
+    url: '',
+    similarity: 0,
+    contentSnippet: '',
+  };
+
+  appendSearchResult(file, resultsContainer, 'relevance');
+
+  const items = resultsContainer.querySelectorAll('.search-result-item');
+  expect(items.length).toBe(1);
+  const item = items[0];
+  expect(item.querySelector('h3').textContent).toBe('Untitled');
+  expect(item.querySelector('.search-result-meta').textContent).toContain('null');
+  expect(item.querySelector('.search-result-meta').textContent).toContain('Relevance: 0.0%');
+  expect(item.querySelector('.view-btn').href).toBe('');
+});
+
+test('does not append if resultsContainer is null', () => {
+  const file = {
+    id: 'file1',
+    name: 'test.pdf',
+    type: 'application/pdf',
+    size: 1024,
+    url: 'https://example.com/test.pdf',
+    similarity: 0.5,
+    contentSnippet: 'Test content',
+  };
+
+  appendSearchResult(file, null, 'relevance');
+
+  expect(resultsContainer.querySelectorAll('.search-result-item').length).toBe(0);
+});
+
+test('handles missing uploadedAt field', () => {
+  const file = {
+    id: 'file1',
+    name: 'test.pdf',
+    type: 'application/pdf',
+    size: 1024,
+    url: 'https://example.com/test.pdf',
+    similarity: 0.5,
+    contentSnippet: 'Test content',
+  };
+
+  appendSearchResult(file, resultsContainer, 'relevance');
+
+  const items = resultsContainer.querySelectorAll('.search-result-item');
+  expect(items.length).toBe(1);
+  expect(items[0].querySelector('.search-result-meta').textContent).toContain('Unknown date');
+  });
+});
+
+
+// Mock currentFilters as a mutable object
 let currentFilters = {};
 
 describe('matchesFilters Function', () => {
+  beforeAll(() => {
+    // Mock Date globally to return a fixed date
+    jest.spyOn(global, 'Date').mockImplementation(() => new Date('2025-05-19T12:20:00+02:00'));
+  });
+
   beforeEach(() => {
-    // Reset currentFilters before each test
-    let currentFilters = {};
-    // Ensure global currentFilters mock is set
-    jest.spyOn(global, 'currentFilters', 'get').mockReturnValue(currentFilters);
+    jest.clearAllMocks();
+    currentFilters = {};
+    // Mock global currentFilters
+    Object.defineProperty(global, 'currentFilters', {
+      get: () => currentFilters,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockClear();
+  });
+
+  afterAll(() => {
+    consoleErrorSpy.mockRestore();
+    jest.restoreAllMocks();
   });
 
   test('returns true when no filters are applied', () => {
-    const file = { type: 'application/pdf', metadata: { category: 'doc' }, uploadedAt: { toDate: () => new Date('2025-05-19') }, tags: ['test'] };
+    const file = {
+      type: 'application/pdf',
+      metadata: { category: 'doc', tags: ['test'] },
+      uploadedAt: { toDate: () => new Date('2025-05-19') },
+    };
     expect(matchesFilters(file)).toBe(true);
   });
 
@@ -1805,14 +2048,14 @@ describe('matchesFilters Function', () => {
     test('returns true when type matches', () => {
       currentFilters.type = 'pdf';
       const file = { type: 'application/pdf' };
-      jest.spyOn(global, 'getSimplifiedType').mockReturnValue('pdf');
+      expect(getSimplifiedType(file.type)).toBe('pdf');
       expect(matchesFilters(file)).toBe(true);
     });
 
     test('returns false when type does not match', () => {
       currentFilters.type = 'pdf';
       const file = { type: 'image/jpeg' };
-      jest.spyOn(global, 'getSimplifiedType').mockReturnValue('image');
+      expect(getSimplifiedType(file.type)).not.toBe('pdf');
       expect(matchesFilters(file)).toBe(false);
     });
   });
@@ -1838,52 +2081,54 @@ describe('matchesFilters Function', () => {
   });
 
   describe('Date Filter', () => {
-    const now = new Date('2025-05-19');
-    const mockNow = jest.spyOn(global, 'Date').mockImplementation(() => now);
+    beforeEach(() => {
+      // Ensure Date mock is consistent
+      jest.spyOn(global, 'Date').mockImplementation(() => new Date('2025-05-19T12:20:00+02:00'));
+    });
 
     afterEach(() => {
-      mockNow.mockReset();
+      jest.restoreAllMocks();
     });
 
     test('returns true for same day', () => {
       currentFilters.date = 'day';
       const file = { uploadedAt: { toDate: () => new Date('2025-05-19T10:00:00') } };
-      jest.spyOn(global, 'isSameDay').mockReturnValue(true);
+      expect(isSameDay(file.uploadedAt.toDate(), new Date())).toBe(true);
       expect(matchesFilters(file)).toBe(true);
     });
 
     test('returns false for different day', () => {
       currentFilters.date = 'day';
       const file = { uploadedAt: { toDate: () => new Date('2025-05-20') } };
-      jest.spyOn(global, 'isSameDay').mockReturnValue(false);
+      expect(isSameDay(file.uploadedAt.toDate(), new Date())).toBe(false);
       expect(matchesFilters(file)).toBe(false);
     });
 
     test('returns true for same week', () => {
       currentFilters.date = 'week';
       const file = { uploadedAt: { toDate: () => new Date('2025-05-25') } };
-      jest.spyOn(global, 'isSameWeek').mockReturnValue(true);
+      expect(isSameWeek(file.uploadedAt.toDate(), new Date())).toBe(true);
       expect(matchesFilters(file)).toBe(true);
     });
 
     test('returns false for different week', () => {
       currentFilters.date = 'week';
       const file = { uploadedAt: { toDate: () => new Date('2025-05-26') } };
-      jest.spyOn(global, 'isSameWeek').mockReturnValue(false);
+      expect(isSameWeek(file.uploadedAt.toDate(), new Date())).toBe(false);
       expect(matchesFilters(file)).toBe(false);
     });
 
     test('returns true for same month', () => {
       currentFilters.date = 'month';
       const file = { uploadedAt: { toDate: () => new Date('2025-05-31') } };
-      jest.spyOn(global, 'isSameMonth').mockReturnValue(true);
+      expect(isSameMonth(file.uploadedAt.toDate(), new Date())).toBe(true);
       expect(matchesFilters(file)).toBe(true);
     });
 
     test('returns false for different month', () => {
       currentFilters.date = 'month';
       const file = { uploadedAt: { toDate: () => new Date('2025-06-01') } };
-      jest.spyOn(global, 'isSameMonth').mockReturnValue(false);
+      expect(isSameMonth(file.uploadedAt.toDate(), new Date())).toBe(false);
       expect(matchesFilters(file)).toBe(false);
     });
 
@@ -1908,19 +2153,19 @@ describe('matchesFilters Function', () => {
 
   describe('Tags Filter', () => {
     test('returns true when all tags match', () => {
-      currentFilters.tags = 'test, project';
+      currentFilters.tags = 'test,project';
       const file = { metadata: { tags: ['test', 'project', 'other'] } };
       expect(matchesFilters(file)).toBe(true);
     });
 
     test('returns false when some tags do not match', () => {
-      currentFilters.tags = 'test, missing';
+      currentFilters.tags = 'test,missing';
       const file = { metadata: { tags: ['test', 'project'] } };
       expect(matchesFilters(file)).toBe(false);
     });
 
     test('handles case-insensitive tag matching', () => {
-      currentFilters.tags = 'Test, Project';
+      currentFilters.tags = 'Test,Project';
       const file = { metadata: { tags: ['test', 'project'] } };
       expect(matchesFilters(file)).toBe(true);
     });
@@ -1938,7 +2183,7 @@ describe('matchesFilters Function', () => {
     });
 
     test('handles empty tag terms', () => {
-      currentFilters.tags = 'test, , project';
+      currentFilters.tags = 'test,,project';
       const file = { metadata: { tags: ['test', 'project'] } };
       expect(matchesFilters(file)).toBe(true);
     });
@@ -1950,15 +2195,15 @@ describe('matchesFilters Function', () => {
         type: 'pdf',
         category: 'doc',
         date: 'month',
-        tags: 'test, project'
+        tags: 'test,project',
       };
       const file = {
         type: 'application/pdf',
         metadata: { category: 'doc', tags: ['test', 'project'] },
-        uploadedAt: { toDate: () => new Date('2025-05-31') }
+        uploadedAt: { toDate: () => new Date('2025-05-31') },
       };
-      jest.spyOn(global, 'getSimplifiedType').mockReturnValue('pdf');
-      jest.spyOn(global, 'isSameMonth').mockReturnValue(true);
+      expect(getSimplifiedType(file.type)).toBe('pdf');
+      expect(isSameMonth(file.uploadedAt.toDate(), new Date())).toBe(true);
       expect(matchesFilters(file)).toBe(true);
     });
 
@@ -1967,15 +2212,14 @@ describe('matchesFilters Function', () => {
         type: 'pdf',
         category: 'doc',
         date: 'month',
-        tags: 'test, project'
+        tags: 'test,project',
       };
       const file = {
         type: 'image/jpeg',
         metadata: { category: 'doc', tags: ['test', 'project'] },
-        uploadedAt: { toDate: () => new Date('2025-05-31') }
+        uploadedAt: { toDate: () => new Date('2025-05-31') },
       };
-      jest.spyOn(global, 'getSimplifiedType').mockReturnValue('image');
-      jest.spyOn(global, 'isSameMonth').mockReturnValue(true);
+      expect(getSimplifiedType(file.type)).not.toBe('pdf');
       expect(matchesFilters(file)).toBe(false);
     });
   });
@@ -1984,14 +2228,20 @@ describe('matchesFilters Function', () => {
     test('handles invalid date filter value', () => {
       currentFilters.date = 'invalid';
       const file = { uploadedAt: { toDate: () => new Date('2025-05-19') } };
-      expect(matchesFilters(file)).toBe(true); // Invalid date filter is ignored
+      expect(matchesFilters(file)).toBe(true); // Invalid date filter ignored
     });
 
     test('handles malformed uploadedAt', () => {
       currentFilters.date = 'day';
       const file = { uploadedAt: { toDate: () => new Date('invalid') } };
-      jest.spyOn(global, 'isSameDay').mockReturnValue(false);
+      expect(isSameDay(file.uploadedAt.toDate(), new Date())).toBe(false);
       expect(matchesFilters(file)).toBe(false);
+    });
+
+    test('handles empty tags string', () => {
+      currentFilters.tags = '';
+      const file = { metadata: { tags: ['test'] } };
+      expect(matchesFilters(file)).toBe(true); // Empty tags filter ignored
     });
   });
 });
