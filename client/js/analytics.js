@@ -48,10 +48,10 @@ function initializeCharts() {
     uploadsChart = new Chart(uploadsCtx, {
         type: 'bar',
         data: {
-            labels: ['Last 7 Days', 'Last 30 Days', 'All Time'],
+            labels: ['Today', 'Last 7 Days', 'Last 30 Days', 'All Time'],
             datasets: [{
                 label: 'Uploads',
-                data: [0, 0, 0],
+                data: [0, 0, 0, 0],
                 backgroundColor: 'rgba(54, 162, 235, 0.7)',
                 borderColor: 'rgba(54, 162, 235, 1)',
                 borderWidth: 1
@@ -166,17 +166,21 @@ function showDocumentDetails(type) {
 function updateCharts() {
     // Sample data - replace with your actual data calculations
     const now = new Date();
+    const todayStart = new Date(now.setHours(0, 0, 0, 0));
     const sevenDaysAgo = new Date(now.setDate(now.getDate() - 7));
     const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30));
     
     // Calculate uploads in different time periods
+    const uploadsToday = userDocuments.filter(doc => 
+        new Date(doc.uploadedAt) > todayStart).length;
     const uploadsLast7Days = userDocuments.filter(doc => 
         new Date(doc.uploadedAt) > sevenDaysAgo).length;
     const uploadsLast30Days = userDocuments.filter(doc => 
         new Date(doc.uploadedAt) > thirtyDaysAgo).length;
     
-    // Update uploads chart
+    // Update uploads chart with today's data
     uploadsChart.data.datasets[0].data = [
+        uploadsToday,
         uploadsLast7Days,
         uploadsLast30Days,
         userDocuments.length
