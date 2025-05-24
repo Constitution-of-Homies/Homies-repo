@@ -29,7 +29,7 @@ function initializeCharts() {
         maintainAspectRatio: false,
         plugins: {
             legend: {
-                position: 'top',
+                display: false, // No legend needed for this chart
             },
             tooltip: {
                 mode: 'index',
@@ -43,7 +43,7 @@ function initializeCharts() {
         }
     };
 
-    // Uploads Chart (Bar chart)
+    // Uploads Chart (Bar chart) - remains the same
     const uploadsCtx = document.getElementById('uploadsChart').getContext('2d');
     uploadsChart = new Chart(uploadsCtx, {
         type: 'bar',
@@ -57,29 +57,43 @@ function initializeCharts() {
                 borderWidth: 1
             }]
         },
-        options: chartOptions
+        options: {
+            ...chartOptions,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Uploads Over Time'
+                }
+            }
+        }
     });
 
-    // Views Chart (Line chart)
+    // Views Chart - Now showing top 5 viewed documents
     const viewsCtx = document.getElementById('viewsChart').getContext('2d');
     viewsChart = new Chart(viewsCtx, {
-        type: 'line',
+        type: 'bar',
         data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            labels: ['Document 1', 'Document 2', 'Document 3', 'Document 4', 'Document 5'],
             datasets: [{
                 label: 'Views',
-                data: [0, 0, 0, 0, 0, 0],
-                fill: false,
+                data: [0, 0, 0, 0, 0],
                 backgroundColor: 'rgba(75, 192, 192, 0.7)',
                 borderColor: 'rgba(75, 192, 192, 1)',
-                tension: 0.1,
-                borderWidth: 2
+                borderWidth: 1
             }]
         },
-        options: chartOptions
+        options: {
+            ...chartOptions,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Top 5 Viewed Documents'
+                }
+            }
+        }
     });
 
-    // Downloads Chart (Doughnut chart)
+    // Downloads Chart (Doughnut chart) - remains the same
     const downloadsCtx = document.getElementById('downloadsChart').getContext('2d');
     downloadsChart = new Chart(downloadsCtx, {
         type: 'doughnut',
@@ -107,7 +121,11 @@ function initializeCharts() {
             ...chartOptions,
             plugins: {
                 legend: {
-                    position: 'right',
+                    position: 'bottom',
+                },
+                title: {
+                    display: true,
+                    text: 'Downloads by Type'
                 }
             }
         }
@@ -188,14 +206,14 @@ function updateCharts() {
     uploadsChart.update();
     
     // Update views chart (sample monthly data)
-    viewsChart.data.datasets[0].data = [
-        Math.floor(Math.random() * 100),
-        Math.floor(Math.random() * 120),
-        Math.floor(Math.random() * 150),
-        Math.floor(Math.random() * 180),
-        Math.floor(Math.random() * 200),
-        totalViews.textContent
-    ];
+    const topViewed = [...userDocuments]
+        .sort((a, b) => b.views - a.views)
+        .slice(0, 5);
+    
+    viewsChart.data.labels = topViewed.map(doc => 
+        doc.name.length > 15 ? doc.name.substring(0, 15) + '...' : doc.name
+    );
+    viewsChart.data.datasets[0].data = topViewed.map(doc => doc.views);
     viewsChart.update();
     
     // Update downloads by type (sample data)
