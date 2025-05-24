@@ -6,6 +6,7 @@ import {
     doc,
     getDoc
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+import { incrementFileStat } from "./stats.js";
 
 let currentSearchTerm = '';
 let currentFilters = {
@@ -157,14 +158,27 @@ function appendSearchResult(file, resultsContainer, sortOption, insertSorted = t
             </div>
         </div>
         <div class="search-result-actions">
-            <a href="${file.url}" target="_blank" class="view-btn">
+            <a href="${file.url}" target="_blank" class="view-btn" data-fileid="${file.id}">
                 <img src="images/icons/view.png" alt="View">
             </a>
-            <a href="${file.url}" download="${file.name}" class="download-btn">
+            <a href="${file.url}" download="${file.name}" class="download-btn" data-fileid="${file.id}">
                 <img src="images/icons/download.png" alt="Download">
             </a>
         </div>
     `;
+
+    const viewBtn = resultItem.querySelector('.view-btn');
+    const downloadBtn = resultItem.querySelector('.download-btn');
+    if (viewBtn) {
+        viewBtn.addEventListener('click', (e) => {
+            incrementFileStat(file.id, 'views');
+        });
+    }
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', (e) => {
+            incrementFileStat(file.id, 'downloads');
+        });
+    }
 
     if (insertSorted) {
         // Insert in sorted position
