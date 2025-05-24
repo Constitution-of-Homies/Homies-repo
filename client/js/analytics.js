@@ -8,7 +8,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
 // DOM elements
-const backBtn = document.getElementById("back-btn");
 const totalUploads = document.getElementById("total-uploads");
 const totalViews = document.getElementById("total-views");
 const totalDownloads = document.getElementById("total-downloads");
@@ -134,12 +133,6 @@ function initializeCharts() {
 
 // Store user's documents data
 let userDocuments = [];
-
-// Back functionality
-backBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    window.location.href = "profile.html";
-});
 
 // Modal functionality
 closeBtn.addEventListener("click", () => {
