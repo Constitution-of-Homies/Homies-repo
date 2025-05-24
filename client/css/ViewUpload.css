@@ -161,7 +161,9 @@ h1::after {
   display: flex;
   flex-direction: column;
   gap: 0;
+  min-width: 800px;
   width: 100%;
+  overflow-x: auto;
   justify-content: space-between;
 }
 
@@ -231,6 +233,7 @@ h1::after {
   display: flex;
   gap: 0.6rem;
   flex-wrap: wrap;
+  position: relative;
 }
 
 .file-actions a, 
@@ -392,6 +395,37 @@ h1::after {
   background: #e0e0e0;
 }
 
+#folder-modal .modal-actions button {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: var(--border-radius);
+  font-family: var(--font-family);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Cancel Button */
+#folder-modal .modal-actions button[type="button"] {
+  background: var(--accent-color);
+  color: white;
+}
+
+/* Create Button */
+#folder-modal .modal-actions button[type="submit"] {
+  background: var(--accent-color);
+  color: white;
+}
+
+/* Hover Effects (Same Darkening for Both) */
+#folder-modal .modal-actions button:hover {
+  color: #333;
+}
+
+/* Optional: Add a slight scale effect for interactivity */
+#folder-modal .modal-actions button:active {
+  transform: scale(0.98);
+}
 /* Status Messages */
 .loading, 
 .empty-message, 
@@ -423,18 +457,58 @@ h1::after {
 
 .file-folder-row {
   display: grid;
-  grid-template-columns: 40px 2fr 1fr 1fr auto; /* icon, name, size, date, actions */
+  grid-template-columns: 40px 2fr 1fr 1fr 80px 40px; /* icon, name, size, date, actions */
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid #eee;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0.5rem;
+  background: white;
+}
+.file-folder-row > * {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .file-folder-row .icon {
   font-size: 1.5rem;
   color: var(--accent-color);
+  font-size: 1.5rem;
+  text-align: center;
+  width: 40px;
 }
 
+.file-folder-row .name {
+  font-weight: 500;
+  padding-right: 0.5rem;
+}
+
+.file-folder-row .type {
+  color: #666;
+  font-size: 0.85rem;
+  padding-right: 0.5rem;
+}
+.file-folder-row .actions {
+  text-align: right;
+}
+.file-folder-row .created {
+  font-size: 0.9rem;
+  padding-right: 0.5rem;
+}
+
+.file-folder-row .size {
+  font-size: 0.9rem;
+  text-align: right;
+  padding-right: 0.5rem;
+}
+
+.file-card .icon {
+  color: var(--accent-color);
+}
 .folder-card .icon {
   color: var(--warning-color);
 }
@@ -449,9 +523,14 @@ h1::after {
   border: none;
   font-size: 1.2rem;
   cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  opacity: 0;
+  padding: 0;
+  opacity: 0.7;
   transition: opacity 0.2s ease;
+  justify-self: end;
+}
+
+.ellipsis-btn:hover {
+  opacity: 1;
 }
 
 .file-folder-row:hover .ellipsis-btn {
@@ -470,20 +549,33 @@ h1::after {
 
 .file-menu {
   position: absolute;
-  top: 100%;  /* Appears directly below the ellipsis */
-  right: 0;
+  top: 0; 
+  right: 100%;
   background: white;
   border: 1px solid #ccc;
-  border-radius: 6px;
-  box-shadow: var(--shadow);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.75rem;
-  z-index: 999;
-  min-width: 160px;
+  z-index: 1000;
+  min-width: 150px;
+  transform: translateX(-10px);
 }
-
+.file-menu:not(.hidden) {
+  animation: fadeIn 0.15s ease-out;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-10px) translateY(0);
+  }
+}
 
 .file-menu.hidden {
   display: none;
@@ -505,4 +597,17 @@ h1::after {
 .file-menu a:hover,
 .file-menu button:hover {
   background: #f0f0f0;
+}
+
+.list-view-header {
+  display: grid;
+  grid-template-columns:  40px 2fr 1fr 1fr 80px 40px;  /* icon, name, type, date, size, actions */
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid #ccc;
+  background: white;
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: var(--primary-color);
+  gap: 0.5rem;
 }

@@ -53,10 +53,35 @@ export function formatFileSize(bytes) {
   if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(1)} MB`;
   return `${(bytes / 1073741824).toFixed(1)} GB`;
 }
-
+export function formatFileType(type) {
+  const typeMap = {
+    'image': 'Image File',
+    'video': 'Video File',
+    'audio': 'Audio File',
+    'pdf': 'PDF Document',
+    'document': 'Document',
+    'spreadsheet': 'Spreadsheet',
+    'presentation': 'Presentation',
+    'archive': 'Archive',
+    'code': 'Code File',
+    'folder': 'Folder',
+    'default': 'File'
+  };
+  if (type.includes('pdf')) return 'PDF Document';
+  if (type.includes('jpg') || type.includes('jpeg') || type.includes('png')) return 'Image File';
+  if (type.includes('doc') || type.includes('docx')) return 'Word Document';
+  if (type.includes('xls') || type.includes('xlsx')) return 'Excel Spreadsheet';
+  if (type.includes('ppt') || type.includes('pptx')) return 'PowerPoint Presentation';
+  
+  return typeMap[type] || typeMap['default'];
+}
 export function detectFileType(file) {
   const type = file.type ? file.type.toLowerCase() : '';
-  if (type.includes('image')) return 'image';
+  const name = file.name ? file.name.toLowerCase() : '';
+  if (type.includes('image') || 
+  ['.jpg', '.jpeg', '.png', '.gif', '.webp'].some(ext => name.endsWith(ext))) {
+return 'image';
+}
   if (type.includes('video')) return 'video';
   if (type.includes('audio')) return 'audio';
   if (type.includes('pdf')) return 'pdf';
@@ -75,8 +100,10 @@ export function detectFileType(file) {
     if (['zip', 'rar', 'tar', 'gz', '7z'].includes(ext)) return 'archive';
     if (['js', 'py', 'java', 'html', 'css', 'json'].includes(ext)) return 'code';
   }
+  
   return type.split('/')[0] || 'default';
 }
+
 
 export function getFileIcon(type) {
   return fileIcons[type] || fileIcons.default;
@@ -84,9 +111,9 @@ export function getFileIcon(type) {
 
 export function formatDate(date) {
   if (!date) return 'Unknown date';
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString('en-GB', {
     year: 'numeric',
-    month: 'short',
+    month: 'numeric',
     day: 'numeric'
   });
 }
@@ -158,6 +185,7 @@ function setupEventListeners(userId) {
   
     if (menu) {
       // Close all others first
+      let hoverTimeout;
       document.querySelectorAll('.file-menu').forEach(m => m.classList.add('hidden'));
       menu.classList.remove('hidden');
   
@@ -176,6 +204,16 @@ function setupEventListeners(userId) {
           if (!inside) menu.classList.add('hidden');
         }, 150); // short delay to allow moving between button and menu
       });
+
+      menu.addEventListener('mouseleave', () => {
+        hoverTimeout = setTimeout(() => {
+          menu.classList.add('hidden');
+        }, 300); // 300ms delay
+      });
+      
+      menu.addEventListener('mouseenter', () => {
+        clearTimeout(hoverTimeout);
+      });
   
       // Also check button
       e.target.addEventListener('pointerleave', () => {
@@ -184,7 +222,6 @@ function setupEventListeners(userId) {
         }, 150);
       });
     }
-  
     return;
   }
   
@@ -421,20 +458,24 @@ async function displayFiles(userId) {
       folderCard.className = 'folder-card';
       folderCard.dataset.path = folder.fullPath;
       folderCard.innerHTML = `
-        <section class="file-folder-row">
-          <P class="icon">${fileIcons.folder}</P>
-          <P class="name">${folder.name}</P>
-          <p class="created">${formatDate(folder.createdAt?.toDate())}</p>
-          <p class="size">${formatFileSize(folder.size)}</p>
-          <button class="ellipsis-btn" data-folder-id="${doc.id}" data-menu-type="folder">⋯</button>
+         <section class="file-folder-row">
+            <section class="icon">${fileIcons.folder}</section>
+            <section class="name">${folder.name}</section>
+            <section class="type">Folder</section>
+            <section class="created">${formatDate(folder.createdAt?.toDate())}</section>
+            <section class="size">-</section>
+            <section class="actions">
+            <button class="ellipsis-btn" data-folder-id="${doc.id}" data-menu-type="folder">⋯</button>
 
           <section class="folder-actions">
             <section class="file-menu hidden" id="folder-menu-${doc.id}">
               <button class="rename-folder-btn" data-folder-id="${doc.id}" data-current-name="${folder.name}">Rename</button>
               <button class="delete-folder-btn" data-folder-id="${doc.id}">Delete</button>
-    </section>
+           </section>
           </section>
         </section>
+        </section>
+        
       `;
     
       groupCard.appendChild(folderCard);
@@ -461,10 +502,12 @@ async function displayFiles(userId) {
         card.className = 'file-card';
         card.innerHTML = `
             <section class="file-folder-row">
-              <p class="icon">${fileIcon}</p>
-              <p class="name">${file.metadata?.title || file.name || 'Untitled'}</p>
-              <p class="created">${formatDate(file.uploadedAt?.toDate())}</p>
-              <p class="size">${formatFileSize(file.size)}</p>
+              <section class="icon">${fileIcon}</section>
+              <section class="name">${file.metadata?.title || file.name || 'Untitled'}</section>
+              <section class="type">${formatFileType(file.type)}</section>
+              <section class="created">${formatDate(file.uploadedAt?.toDate())}</section>
+              <section class="size">${formatFileSize(file.size)}</section>
+              <section class="actions">
               <button class="ellipsis-btn" data-doc-id="${doc.id}">⋯</button>
           
               <section class="file-actions">
@@ -483,6 +526,7 @@ async function displayFiles(userId) {
                 <button class="delete-btn" data-doc-id="${doc.id}" data-blob-name="${file.url}">Delete</button>
               </section>
             </section>
+          </section>
           </section>
         `;
         groupCard.appendChild(card);

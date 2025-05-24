@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="css/upload.css">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/back.css">
-  <link rel="stylesheet" href="css/search.css">
   <link rel="stylesheet" href="css/profile.css">
   <link rel="stylesheet" href="css/drawer.css"/>
 
@@ -67,16 +66,6 @@
     <h1>My Files</h1>
     <!-- <button class="back-button" onclick="window.location.href='profile.html'">← Go Back</button> -->
 
-    <section class="search-container">
-      <input type="text" placeholder="Search..." class="search-input">
-      <button class="search-button">
-          <img src="./images/icons/search.png" alt="Search" class="search-icon">
-      </button>
-      <button class="filter-button">
-          <img src="./images/icons/filter.png" alt="Filters" class="filter-icon">
-      </button>
-  </section>
-
     <!-- Breadcrumbs -->
     <section id="directory-breadcrumbs" class="breadcrumbs">
       <button class="breadcrumb home" data-path="">Home</button>
@@ -95,11 +84,12 @@
 
     <section id="files-container">
       <section class="file-headers list-view-header">
-        <section></section> <!-- icon placeholder -->
+        <section><!-- icon --></section> 
         <section>Name</section>
+        <section>Type</section>
         <section>Date Uploaded</section>
         <section>Size</section>
-        <section></section>
+        <section><!-- actions  --></section>
         </section>
       </section>
     </section>
