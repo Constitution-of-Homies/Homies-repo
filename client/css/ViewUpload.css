@@ -280,6 +280,43 @@ h1::after {
   box-shadow: var(--shadow);
 }
 
+.signout-container {
+  padding: 0;
+  border-top: 1px solid var(--accent-color);
+}
+
+#sign-out-btn {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--text-color);
+  padding: 15px 20px;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+}
+
+#sign-out-btn:hover {
+  background-color: var(--hover-color);
+}
+
+#sign-out-btn .nav-icon {
+  position: absolute;
+  left: 20px;
+}
+
+#sign-out-btn .nav-text {
+  opacity: 0;
+  transition: opacity 0.2s ease 0.1s;
+  margin-left: 35px;
+}
+
+nav:hover #sign-out-btn .nav-text {
+  opacity: 1;
+}
 
 .edit-btn {
   background: var(--warning-color);

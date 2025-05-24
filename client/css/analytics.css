@@ -9,7 +9,8 @@
 * {
     padding: 0;
     margin: 0;
-    box-sizing: border-box
+    box-sizing: border-box;
+    font-family:'Segoe UI', Tahoma;
 }
 
 
@@ -57,32 +58,59 @@ header h1 {
     gap: 0.5rem;
 }
 
-#back-btn {
-    border: 1px solid white;
-    color: rgb(0, 0, 0);
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
+/* signout container styles */
+.signout-container {
+  padding: 0;
+  border-top: 1px solid var(--accent-color);
 }
 
-#back-btn:hover {
-    background-color: var(--hover-color);
+#sign-out-btn {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--text-color);
+  padding: 15px 20px;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+}
+
+#sign-out-btn:hover {
+  background-color: var(--hover-color);
+}
+
+#sign-out-btn .nav-icon {
+  position: absolute;
+  left: 20px;
+}
+
+#sign-out-btn .nav-text {
+  opacity: 0;
+  transition: opacity 0.2s ease 0.1s;
+  margin-left: 35px;
+}
+
+nav:hover #sign-out-btn .nav-text {
+  opacity: 1;
 }
 
 main {
     padding: 40px;
 }
-  
+
 main.analytics-dashboard {
     flex: 1;
     padding: 2rem;
     max-width: 800px;
     margin: 0 auto;
     width: 100%;
+    overflow-y: auto;
+    height: 100vh; /* Full viewport height */
+    margin-left: 260px; /* Match initial nav width */
+    transition: margin-left 0.3s ease;
 }
 
 main.analytics-dashboard h2 {

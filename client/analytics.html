@@ -6,17 +6,55 @@
     <title>Analytics - Scriptorium</title>
     <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="css/analytics.css"/>
+    <link rel="stylesheet" href="css/sideBar.css"/>
     <!-- Add Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <header>
+    <nav>
         <section class="logo">
-            <img src="./images/scriptorium.png" alt="Scriptorium Logo" class="logo-img">
+            <img src="./images/1x1-dark-feather.png" alt="Scriptorium Logo" class="logo-img">
             <p class="logo-text">Scriptorium</p>
         </section>
-        <button id="back-btn"><img src="images/icons/back-btn.png" width="18" height="18"> Back</button>
-    </header>
+
+        <section class="side-menu">
+            <section class="nav-items">
+                <ul>
+                    <li>
+                        <a href="index.html">
+                            <img src="./images/icons/home.png" alt="Home" class="nav-icon">
+                            <p class="nav-text">Home</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="profile.html">
+                            <img src="./images/icons/dashboard.png" alt="Dashboard" class="nav-icon">
+                            <p class="nav-text">Dashboard</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="ViewUpload.html">
+                            <img src="./images/icons/upload.png" alt="Uploads" class="nav-icon">
+                            <p class="nav-text">My Uploads</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="settings.html">
+                            <img src="./images/icons/settings.png" alt="Settings" class="nav-icon">
+                            <p class="nav-text">Settings</p>
+                        </a>
+                    </li>
+                </ul>
+            </section>
+
+            <section class="signout-container">
+                <button id="sign-out-btn">
+                    <img src="./images/icons/logout.png" alt="Signout" class="nav-icon">
+                    <p class="nav-text">Sign Out</p>
+                </button>
+            </section>
+        </section>
+    </nav>
 
     <main class="analytics-dashboard">
         <h2>Analytics</h2>
