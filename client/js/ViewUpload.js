@@ -87,7 +87,7 @@ export function formatDate(date) {
   if (!date) return 'Unknown date';
   return date.toLocaleDateString('en-UK', {
     year: 'numeric',
-    month: 'numeric',
+    month: 'short',
     day: 'numeric'
   });
 }
@@ -425,7 +425,6 @@ async function displayFiles(userId) {
         <section class="file-folder-row">
           <P class="icon">${fileIcons.folder}</P>
           <P class="name">${folder.name}</P>
-          <p class="type">Folder</p>
           <p class="created">${formatDate(folder.createdAt?.toDate())}</p>
           <p class="size">${formatFileSize(folder.size)}</p>
           <button class="ellipsis-btn" data-folder-id="${doc.id}" data-menu-type="folder">⋯</button>
@@ -465,7 +464,6 @@ async function displayFiles(userId) {
             <section class="file-folder-row">
               <p class="icon">${fileIcon}</p>
               <p class="name">${file.metadata?.title || file.name || 'Untitled'}</p>
-              <p class="type">${fileType}</p>
               <p class="created">${formatDate(file.uploadedAt?.toDate())}</p>
               <p class="size">${formatFileSize(file.size)}</p>
               <button class="ellipsis-btn" data-doc-id="${doc.id}">⋯</button>
