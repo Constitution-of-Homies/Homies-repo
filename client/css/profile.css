@@ -126,7 +126,7 @@ nav:hover + main {
 }
 
 .profile-info h3 {
-    font-size: 1.5rem;
+    font-size: 2rem;
     color: black;
     margin: 0;
 }
@@ -175,26 +175,6 @@ nav:hover + main {
     margin-left: 28px;
     line-height: 1.4;
 }
-
-#recentUploadsContainer {
-    margin-top: 20px;
-}
-
-.recent-uploads {
-    width: 100%;
-    background-color: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.recent-uploads h2 {
-    color: black;
-    margin-bottom: 20px;
-    text-align: left;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--secondary-color);
-} 
 
 /* Responsive adjustments */
 @media (max-width: 768px) {

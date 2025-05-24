@@ -8,12 +8,6 @@ document.getElementById("email-notify-toggle").addEventListener("change", (e) =>
     }
 });
 
-// DOM element
-const backBtn = document.getElementById("back-btn");
-
-backBtn.addEventListener("click", () => {
-    window.location.href = "profile.html"; 
-});
 import{ auth } from "./firebase.js";
 
 // sign out

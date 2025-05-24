@@ -37,7 +37,6 @@ function getSimplifiedType(fileType) {
     return type.split('/')[0] || 'default';
 }
 
-
 function getFileIcon(type) {
     const fileIcons = {
         image: '<img src="images/icons/image.png" alt="Image Icon" class="file-icon">',
@@ -56,45 +55,87 @@ function getFileIcon(type) {
     return fileIcons[type] || fileIcons.default;
 }
 
-// Display recent uploads
 async function displayRecentUploads(userId) {
-    const recentUploadsContainer = document.getElementById('recentUploadsContainer');
     try {
-         const uploadsRef = collection(db, "users", userId, "uploads");
-         const q = query(
-            uploadsRef, 
-            orderBy("uploadedAt", "desc"),
-            limit(10)
+        const recentUploadsContainer = document.getElementById('recentUploadsContainer');
+        if (!recentUploadsContainer) {
+            console.error('Recent uploads container not found');
+            return;
+        }
+
+        // Get all user uploads (without ordering)
+        const q = query(
+            collection(db, "archiveItems"),
+            where("uploadedBy", "==", userId)
         );
+
         const querySnapshot = await getDocs(q);
         
         if (querySnapshot.empty) {
-            recentUploadsContainer.innerHTML = '<p>No uploads yet</p>';
+            recentUploadsContainer.innerHTML = '<p class="empty-message">No recent uploads found</p>';
             return;
         }
-        
-        let uploadsHTML = '';
+
+        // Convert to array and sort by date in memory
+        const uploads = [];
         querySnapshot.forEach((doc) => {
-            const upload = doc.data();
-            uploadsHTML += `
-                <section class="upload-item">
-                    <section class="upload-info">
-                        <img src="${getFileIcon(upload.type)}" alt="${upload.type}" class="file-icon">
-                        <p class="file-name">${upload.name || "Untitled"}</p>
-                    </section>
-                    <section class="upload-stats">
-                        ${formatDate(new Date(upload.uploadedAt))}<br>
-                        ${upload.views || 0} views · ${upload.downloads || 0} downloads
-                    </section>
-                </section>
+            uploads.push({
+                id: doc.id,
+                ...doc.data(),
+                uploadedAt: doc.data().uploadedAt?.toDate() || new Date(0)
+            });
+        });
+
+        // Sort by date (newest first)
+        uploads.sort((a, b) => b.uploadedAt - a.uploadedAt);
+        
+        // Take top 6
+        const recentUploads = uploads.slice(0, 3);
+
+        let html = '<div class="recent-uploads-grid">';
+        
+        recentUploads.forEach((file) => {
+            const fileType = getSimplifiedType(file.type);
+            const fileIcon = getFileIcon(fileType);
+            const fileName = file.metadata?.title || file.name || 'Untitled';
+            const uploadDate = formatDate(file.uploadedAt);
+            const views = file.views || 0;
+            const downloads = file.downloads || 0;
+            
+            html += `
+                <div class="recent-upload-item">
+                    ${fileIcon}
+                    <div class="recent-upload-content">
+                        <h3 class="recent-upload-title">${fileName}</h3>
+                        ${file.description ? `<p class="recent-upload-description">${file.description}</p>` : ''}
+                        <div class="recent-upload-meta">
+                            <div class="meta-item">
+                                <img src="images/icons/view.png" alt="Views" class="meta-icon">
+                                <span class="meta-value">${views}</span>
+                            </div>
+                            <div class="meta-item">
+                                <img src="images/icons/download.png" alt="Downloads" class="meta-icon">
+                                <span class="meta-value">${downloads}</span>
+                            </div>
+                            <div class="meta-item upload-date">
+                                <img src="images/icons/calendar.png" alt="Date" class="meta-icon">
+                                <span class="meta-value">${uploadDate}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             `;
         });
-        
-        recentUploadsContainer.innerHTML = uploadsHTML;
+
+        html += '</div>';
+        recentUploadsContainer.innerHTML = html;
     } catch (error) {
-        console.error('Error fetching uploads:', error);
-        recentUploadsContainer.innerHTML = '<p>Error loading uploads</p>';
+        console.error("Error loading recent uploads:", error);
+        const recentUploadsContainer = document.getElementById('recentUploadsContainer');
+        if (recentUploadsContainer) {
+            recentUploadsContainer.innerHTML = '<p class="error-message">Error loading recent uploads</p>';
+        }
     }
 }
 
-export { getSimplifiedType, getFileIcon, displayRecentUploads }
+export { getSimplifiedType, getFileIcon, displayRecentUploads };
