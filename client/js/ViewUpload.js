@@ -19,18 +19,19 @@ import { setUploadPath } from './upload.js';
 
 // File type icons
 const fileIcons = {
-  image: '🖼️',
-  video: '🎬',
-  audio: '🎵',
-  document: '📄',
-  spreadsheet: '📊',
-  presentation: '📑',
-  archive: '🗄️',
-  code: '💻',
-  pdf: '📕',
-  folder: '📁',
-  default: '📄'
-};
+        image: '<img src="images/icons/image.png" alt="Image Icon" class="file-icon">',
+        video: '<img src="images/icons/video.png" alt="Video Icon" class="file-icon">',
+        audio: '<img src="images/icons/audio.png" alt="Audio Icon" class="file-icon">',
+        document: '<img src="images/icons/document.png" alt="Document Icon" class="file-icon">',
+        spreadsheet: '<img src="images/icons/spreadsheet.png" alt="Spreadsheet Icon" class="file-icon">',
+        presentation: '<img src="images/icons/presentation.png" alt="Presentation Icon" class="file-icon">',
+        archive: '<img src="images/icons/archive.png" alt="Archive Icon" class="file-icon">',
+        code: '<img src="images/icons/code.png" alt="Code Icon" class="file-icon">',
+        pdf: '<img src="images/icons/pdf.png" alt="PDF Icon" class="file-icon">',
+        text: '<img src="images/icons/text.png" alt="Text Icon" class="file-icon">',
+        folder: '<img src="images/icons/folder (1).png" alt="Folder Icon" class="file-icon">',
+        default: '<img src="images/icons/default.png" alt="Default Icon" class="file-icon">'
+    };
 
 // Current directory path state
 let currentPath = '';
@@ -469,9 +470,9 @@ async function displayFiles(userId) {
 
           <section class="folder-actions">
             <section class="file-menu hidden" id="folder-menu-${doc.id}">
-              <button class="rename-folder-btn" data-folder-id="${doc.id}" data-current-name="${folder.name}">Rename</button>
-              <button class="delete-folder-btn" data-folder-id="${doc.id}">Delete</button>
-           </section>
+              <button class="rename-folder-btn" data-folder-id="${doc.id}" data-current-name="${folder.name}"><img src="images/icons/rename.png" class="menu-icon" alt="Rename">Rename</button>
+              <button class="delete-folder-btn" data-folder-id="${doc.id}"><img src="images/icons/delete.png" class="menu-icon" alt="Delete">Delete</button>
+            </section>
           </section>
         </section>
         </section>
@@ -512,18 +513,28 @@ async function displayFiles(userId) {
           
               <section class="file-actions">
               <section class="file-menu hidden" id="menu-${doc.id}">
-                <a href="${file.url}" target="_blank">View</a>
-                <a href="${file.url}" download="${file.name || 'download'}">Download</a>
+                <button class="view-btn" onclick="window.open('${file.url}', '_blank')">
+                  <img src="images/icons/view.png" class="menu-icon" alt="View"> View
+                </button>
+                <button class="download-btn" onclick="window.location.href='${file.url}'">
+                  <img src="images/icons/download.png" class="menu-icon" alt="Download"> Download
+                </button>
+                <button class="move-btn" 
+                  data-doc-id="${doc.id}"
+                  data-current-path="${file.path || ''}">
+                  <img src="images/icons/move.png" class="menu-icon" alt="Move"> Move
+                </button>
                 <button class="edit-btn" 
                   data-doc-id="${doc.id}" 
                   data-title="${file.metadata?.title || file.name || 'Untitled'}"
                   data-description="${file.metadata?.description || ''}"
                   data-tags="${file.metadata?.tags?.join(', ') || ''}"
-                  data-category="${file.metadata?.category || 'general'}">Edit</button>
-                <button class="move-btn" 
-                  data-doc-id="${doc.id}"
-                  data-current-path="${file.path || ''}">Move</button>
-                <button class="delete-btn" data-doc-id="${doc.id}" data-blob-name="${file.url}">Delete</button>
+                  data-category="${file.metadata?.category || 'general'}">
+                  <img src="images/icons/edit.png" class="menu-icon" alt="Edit"> Edit
+                </button>
+                <button class="delete-btn" data-doc-id="${doc.id}" data-blob-name="${file.url}">
+                  <img src="images/icons/delete.png" class="menu-icon" alt="Delete"> Delete
+                </button>
               </section>
             </section>
           </section>
@@ -555,6 +566,14 @@ function updateBreadcrumbs() {
 
   // Parse current path and build breadcrumbs
   currentPathArray = currentPath ? currentPath.split('/').filter(Boolean) : [];
+
+  // Reset Home breadcrumb styling
+  const homeBtn = breadcrumbs.querySelector('.breadcrumb');
+  homeBtn.classList.remove('active');
+
+  if (currentPathArray.length === 0) {
+    homeBtn.classList.add('active');
+  }
   
   let accumulatedPath = '';
   currentPathArray.forEach((folder, index) => {
@@ -563,7 +582,12 @@ function updateBreadcrumbs() {
     breadcrumb.className = 'breadcrumb';
     breadcrumb.dataset.path = accumulatedPath;
     breadcrumb.textContent = folder;
+
+    if (index === currentPathArray.length - 1) {
+  breadcrumb.classList.add('active');
+    }
     breadcrumbs.appendChild(breadcrumb);
+
   });
 }
 
@@ -803,12 +827,29 @@ async function loadAvailableFolders(userId, selectElement) {
     );
     
     const foldersSnapshot = await getDocs(foldersQuery);
+    const folders = [];
     
     foldersSnapshot.forEach((doc) => {
       const folder = doc.data();
+      folders.push({
+        name: folder.name,
+        path: folder.fullPath,
+        depth: folder.fullPath.split('/').filter(Boolean).length - 1
+      });
+    });
+
+    // Sort by path to keep hierarchy order
+    folders.sort((a, b) => a.path.localeCompare(b.path));
+
+    folders.forEach((folder) => {
       const option = document.createElement('option');
-      option.value = folder.fullPath;
-      option.textContent = folder.name;
+      // Create tree-like indentation using Unicode tree characters
+      let treePrefix = '';
+      for (let i = 0; i < folder.depth; i++) {
+        treePrefix += (i === folder.depth - 1) ? '├── ' : '│   ';
+      }
+      option.value = folder.path;
+      option.innerHTML = `${treePrefix}${folder.name}`;
       selectElement.appendChild(option);
     });
   } catch (error) {
