@@ -9,12 +9,9 @@
   <link rel="stylesheet" href="css/upload.css">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/back.css">
-  <link rel="stylesheet" href="css/search.css">
   <link rel="stylesheet" href="css/profile.css">
   <link rel="stylesheet" href="css/drawer.css"/>
-
-  
-    
+  <link rel="stylesheet" href="css/sideBar.css"/>    
 </head>
 <body>
   <nav>
@@ -38,7 +35,7 @@
                           <p class="nav-text">Dashboard</p>
                       </a>
                   </li>
-                  <!-- <li>
+                   <li>
                       <a href="analytics.html">
                           <img src="./images/icons/chart.png" alt="Analytics" class="nav-icon">
                           <p class="nav-text">Analytics</p>
@@ -49,37 +46,26 @@
                           <img src="./images/icons/settings.png" alt="Settings" class="nav-icon">
                           <p class="nav-text">Settings</p>
                       </a>
-                  </li> -->
+                  </li>
               </ul>
           </section>
 
-          <!-- <section class="signout-container">
+          <section class="signout-container">
               <button id="sign-out-btn">
                   <img src="./images/icons/sign-out.png" alt="Signout" class="nav-icon">
                   <p class="nav-text">Sign Out</p>
               </button>
-            </section> -->
+            </section>
       </section>
   </nav>
   <main class="dashboard-layout">
 
     <section class="main-content">
-    <h1>My Files</h1>
+    <h1>Files Archive</h1>
     <!-- <button class="back-button" onclick="window.location.href='profile.html'">← Go Back</button> -->
-
-    <section class="search-container">
-      <input type="text" placeholder="Search..." class="search-input">
-      <button class="search-button">
-          <img src="./images/icons/search.png" alt="Search" class="search-icon">
-      </button>
-      <button class="filter-button">
-          <img src="./images/icons/filter.png" alt="Filters" class="filter-icon">
-      </button>
-  </section>
-
     <!-- Breadcrumbs -->
     <section id="directory-breadcrumbs" class="breadcrumbs">
-      <button class="breadcrumb home" data-path="">Home</button>
+      <button class="breadcrumb" data-path="">Home</button>
     </section>
 
     <section class="directory-controls">
@@ -95,11 +81,12 @@
 
     <section id="files-container">
       <section class="file-headers list-view-header">
-        <section></section> <!-- icon placeholder -->
+        <section><!-- icon --></section> 
         <section>Name</section>
+        <section>Type</section>
         <section>Date Uploaded</section>
         <section>Size</section>
-        <section></section>
+        <section><!-- actions  --></section>
         </section>
       </section>
     </section>
@@ -152,7 +139,7 @@
     <section class="modal-content">
       <h2>Move File</h2>
       <form id="move-form">
-        <p>Current Location: <span id="current-folder"></span></p>
+        <p>Current Location: <p id="current-folder"></p></p>
         <section class="form-group">
           <label for="target-folder">Move to:</label>
           <select id="target-folder" required>

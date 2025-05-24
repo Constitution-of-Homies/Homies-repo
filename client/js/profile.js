@@ -11,6 +11,8 @@ import {
     updateDoc
 } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
+import { getFileIcon, displayRecentUploads } from './recentUpload.js';
+
 // Check auth state when page loads
 document.addEventListener('DOMContentLoaded', function() {
     onAuthStateChanged(auth, async (user) => {
@@ -25,6 +27,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Set up edit functionality
                 setupEditProfile(user, userData);
+
+                //Load recent
+                await displayRecentUploads(user.uid);
                 
             } catch (error) {
                 console.error("Error loading user data:", error);
