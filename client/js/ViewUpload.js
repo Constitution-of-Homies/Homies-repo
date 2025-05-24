@@ -159,247 +159,370 @@ window.addEventListener('filesUploaded', () => {
   }
 });
 
+// Global variables to manage the active menu and its close timeout
+let activeMenu = null; // Stores the currently open menu element
+let menuCloseTimeout = null; // Stores the ID of the timeout for closing the menu
+
+// Helper function to close all menus
+function closeAllMenus() {
+    document.querySelectorAll('.file-menu, .folder-menu').forEach(menu => {
+        menu.classList.add('hidden');
+        const openedByButton = document.querySelector(`[aria-expanded="true"][aria-controls="${menu.id}"]`);
+        if (openedByButton) {
+            openedByButton.setAttribute('aria-expanded', 'false');
+        }
+    });
+    activeMenu = null; // Clear the active menu
+    if (menuCloseTimeout) { // Clear any pending close timeout
+        clearTimeout(menuCloseTimeout);
+        menuCloseTimeout = null;
+    }
+}
+
 function setupEventListeners(userId) {
-  // Event delegation for edit, delete, and folder navigation
-  document.addEventListener('click', async (e) => {
-    // Close all menus if click is outside
-  if (!e.target.closest('.file-actions')) {
-    document.querySelectorAll('.file-menu').forEach(menu => menu.classList.add('hidden'));
-  }
 
-  // Toggle specific menu
-  if (e.target.classList.contains('ellipsis-btn')) {
-    e.stopPropagation(); // prevent auto-close
-    const docId = e.target.dataset.docId;
-    const menu = document.getElementById(`menu-${docId}`);
-    if (menu) {
-      menu.classList.toggle('hidden');
-    }
-  }
+    // --- Core Event Listeners ---
 
-  if (e.target.classList.contains('ellipsis-btn')) {
-    e.stopPropagation();
-    const isFolder = e.target.dataset.menuType === 'folder';
-    const id = isFolder ? e.target.dataset.folderId : e.target.dataset.docId;
-    const menuId = isFolder ? `folder-menu-${id}` : `menu-${id}`;
-    const menu = document.getElementById(menuId);
-  
-    if (menu) {
-      // Close all others first
-      let hoverTimeout;
-      document.querySelectorAll('.file-menu').forEach(m => m.classList.add('hidden'));
-      menu.classList.remove('hidden');
-  
-      // Lock state to prevent premature hide
-      let inside = true;
-  
-      // When mouse enters, set inside = true
-      menu.addEventListener('pointerenter', () => {
-        inside = true;
-      });
-  
-      // When mouse leaves, set inside = false
-      menu.addEventListener('pointerleave', () => {
-        inside = false;
-        setTimeout(() => {
-          if (!inside) menu.classList.add('hidden');
-        }, 150); // short delay to allow moving between button and menu
-      });
+    // 1. Handle Click to Open and General Clicks to Close
+    document.addEventListener('click', async (e) => {
+        const ellipsisBtn = e.target.closest('.ellipsis-btn'); // Use closest to account for child elements
 
-      menu.addEventListener('mouseleave', () => {
-        hoverTimeout = setTimeout(() => {
-          menu.classList.add('hidden');
-        }, 300); // 300ms delay
-      });
-      
-      menu.addEventListener('mouseenter', () => {
-        clearTimeout(hoverTimeout);
-      });
-  
-      // Also check button
-      e.target.addEventListener('pointerleave', () => {
-        setTimeout(() => {
-          if (!inside) menu.classList.add('hidden');
-        }, 150);
-      });
-    }
-    return;
-  }
-  
-    if (e.target.classList.contains('edit-btn')) {
-        const docId = e.target.dataset.docId;
-        const title = e.target.dataset.title || 'Untitled';
-        const description = e.target.dataset.description || '';
-        const tags = e.target.dataset.tags || '';
-        const category = e.target.dataset.category || 'general';
-        openEditModal(docId, title, description, tags, category);
-    } else if (e.target.classList.contains('rename-folder-btn')) {
-        const folderId = e.target.dataset.folderId;
-        const currentName = e.target.dataset.currentName || '';
-        openRenameFolderModal(folderId, currentName);
-    } else if (e.target.classList.contains('delete-btn')) {
-        const docId = e.target.dataset.docId;
-        const blobUrl = e.target.dataset.blobName;
-        if (confirm('Are you sure you want to permanently delete this file?')) {
-            try {
-                await deleteFile(docId, blobUrl);
-            } catch (error) {
-                alert('Error deleting file: ' + error.message);
+        // If a click is on an ellipsis button
+        if (ellipsisBtn) {
+            e.preventDefault();
+            e.stopPropagation(); // Stop propagation to prevent document click from closing
+
+            const isFolder = ellipsisBtn.hasAttribute('data-folder-id');
+            const id = isFolder ? ellipsisBtn.dataset.folderId : ellipsisBtn.dataset.docId;
+            const menuId = isFolder ? `folder-menu-${id}` : `menu-${id}`;
+            const menu = document.getElementById(menuId);
+
+            if (menu) {
+                // Clear any pending close timeout immediately
+                if (menuCloseTimeout) {
+                    clearTimeout(menuCloseTimeout);
+                    menuCloseTimeout = null;
+                }
+
+                // Close all other menus, but only if they are not the target menu
+                document.querySelectorAll('.file-menu, .folder-menu').forEach(m => {
+                    if (m.id !== menuId) {
+                        m.classList.add('hidden');
+                        const otherBtn = document.querySelector(`[aria-controls="${m.id}"]`);
+                        if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
+                    }
+                });
+
+                // Toggle visibility of the current menu
+                menu.classList.toggle('hidden');
+                const isHidden = menu.classList.contains('hidden');
+
+                // Set/unset active menu
+                activeMenu = isHidden ? null : menu;
+
+                // Update ARIA attributes
+                ellipsisBtn.setAttribute('aria-expanded', String(!isHidden));
+                ellipsisBtn.setAttribute('aria-controls', menuId); // Link button to menu
+
+                // Position the menu only if it's being shown
+                if (!isHidden) {
+                    const btnRect = ellipsisBtn.getBoundingClientRect();
+                    let topPos = btnRect.bottom + window.scrollY;
+                    let leftPos = btnRect.left + window.scrollX;
+
+                    // Dynamic left positioning to keep menu in viewport
+                    const menuWidth = menu.offsetWidth;
+                    const viewportWidth = window.innerWidth;
+                    if (leftPos + menuWidth > viewportWidth - 10) {
+                         leftPos = viewportWidth - menuWidth - 10;
+                    }
+                    if (leftPos < 10) {
+                        leftPos = 10;
+                    }
+
+                    menu.style.top = `${topPos}px`;
+                    menu.style.left = `${leftPos}px`;
+                }
+            }
+            return; // Important: Exit function after handling ellipsis click
+        }
+
+        // If click is not on an ellipsis button, and not inside an active menu, close all menus
+        // This handles clicks anywhere else on the document to close menus.
+        if (activeMenu && !activeMenu.contains(e.target)) {
+            closeAllMenus();
+        }
+    });
+
+    // 2. Handle Mouseenter (Hovering over ellipsis button or open menu)
+    document.addEventListener('mouseenter', (e) => {
+        // If mouse enters an ellipsis button that *might* open a menu
+        if (e.target.classList.contains('ellipsis-btn')) {
+            // If there's a pending close timeout, clear it.
+            // This prevents a menu from closing if you briefly move off and then back on its button.
+            if (menuCloseTimeout) {
+                clearTimeout(menuCloseTimeout);
+                menuCloseTimeout = null;
+            }
+            // We only open on click, so no further action here on mouseenter for button
+        }
+        // If mouse enters an already active/open menu
+        else if (activeMenu && (activeMenu === e.target || activeMenu.contains(e.target))) {
+            // If there's a pending close timeout for this menu, clear it.
+            // This keeps the menu open as long as the mouse is over it.
+            if (menuCloseTimeout) {
+                clearTimeout(menuCloseTimeout);
+                menuCloseTimeout = null;
             }
         }
-    } else if (e.target.classList.contains('delete-folder-btn')) {
-        e.stopPropagation(); // Prevent event from bubbling to folder-card
-        const folderId = e.target.dataset.folderId;
-        if (confirm('Are you sure you want to delete this folder and all its contents?')) {
-            try {
-                await deleteFolder(folderId, auth.currentUser.uid);
-            } catch (error) {
-                alert('Error deleting folder: ' + error.message);
+    }, true); // Use capture phase
+
+    // 3. Handle Mouseleave (Hovering away from ellipsis button or active menu)
+    document.addEventListener('mouseleave', (e) => {
+        const targetElement = e.target;
+        const relatedTarget = e.relatedTarget; // The element the mouse is moving to
+
+        // Check if leaving an ellipsis button
+        if (targetElement.classList.contains('ellipsis-btn')) {
+            const isFolder = targetElement.hasAttribute('data-folder-id');
+            const id = isFolder ? targetElement.dataset.folderId : targetElement.dataset.docId;
+            const menuId = isFolder ? `folder-menu-${id}` : `menu-${id}`;
+            const menu = document.getElementById(menuId);
+
+            // If a menu is open and we're leaving the button
+            if (menu && !menu.classList.contains('hidden')) {
+                // If the mouse is moving from the button *into* the associated menu, don't close
+                if (menu.contains(relatedTarget)) {
+                    return;
+                }
+                // Otherwise, set a timeout to close the menu
+                menuCloseTimeout = setTimeout(() => {
+                    // Only close if the mouse is truly outside both the button and the menu
+                    // Use a more robust check involving elementFromPoint or checking if relatedTarget is still outside
+                    const currentTarget = document.elementFromPoint(e.clientX, e.clientY);
+                    if (!ellipsisBtn.contains(currentTarget) && !menu.contains(currentTarget)) {
+                        closeAllMenus(); // Use the general close function
+                    }
+                }, 200); // 200ms delay to allow moving to menu
             }
         }
-    } else if (e.target.classList.contains('breadcrumb')) {
-        const path = e.target.dataset.path || '';
-        navigateToDirectory(path);
-    } else if (e.target.classList.contains('move-btn')) {
-        const docId = e.target.dataset.docId;
-        const currentPath = e.target.dataset.currentPath || '';
-        openMoveModal(docId, currentPath);
-    } else if (e.target.closest('.folder-card')) {
-        const folderCard = e.target.closest('.folder-card');
-        // Only navigate if the click wasn't on a button inside the folder card
-        if (!e.target.closest('.folder-actions')) {
-            const path = folderCard.dataset.path;
+        // Check if leaving an active menu itself
+        else if (activeMenu && (targetElement === activeMenu || activeMenu.contains(targetElement))) {
+            // If the mouse is moving from the menu *into* its associated ellipsis button, don't close
+            const associatedEllipsisBtn = document.querySelector(`[aria-controls="${activeMenu.id}"]`);
+            if (associatedEllipsisBtn && associatedEllipsisBtn.contains(relatedTarget)) {
+                return;
+            }
+
+            // Otherwise, set a timeout to close the menu
+            menuCloseTimeout = setTimeout(() => {
+                // Only close if the mouse is truly outside the menu (and its button)
+                const currentTarget = document.elementFromPoint(e.clientX, e.clientY);
+                if (!activeMenu.contains(currentTarget) && !(associatedEllipsisBtn && associatedEllipsisBtn.contains(currentTarget))) {
+                     closeAllMenus(); // Use the general close function
+                }
+            }, 200); // 200ms delay
+        }
+    }, true); // Use capture phase for reliability
+
+    // --- Rest of your event listeners (actions, modals, etc.) ---
+    // These remain the same, ensure `closeAllMenus()` is called after an action.
+
+    // Example for `edit-button`
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('edit-button')) {
+            closeAllMenus(); // Close the menu immediately after clicking an action
+            const docId = e.target.dataset.docId;
+            const title = e.target.dataset.title || 'Untitled';
+            const description = e.target.dataset.description || '';
+            const tags = e.target.dataset.tags || '';
+            const category = e.target.dataset.category || 'general';
+            openEditModal(docId, title, description, tags, category);
+        }
+        // ... (other action buttons like rename-folder-btn, delete-btn, etc.)
+        else if (e.target.classList.contains('rename-folder-btn')) {
+            closeAllMenus();
+            const folderId = e.target.dataset.folderId;
+            const currentName = e.target.dataset.currentName || '';
+            openRenameFolderModal(folderId, currentName);
+        } else if (e.target.classList.contains('delete-btn')) {
+            closeAllMenus();
+            const docId = e.target.dataset.docId;
+            const blobUrl = e.target.dataset.blobName;
+            if (confirm('Are you sure you want to permanently delete this file?')) {
+                try {
+                    // Assuming deleteFile is an async function
+                    deleteFile(docId, blobUrl);
+                } catch (error) {
+                    alert('Error deleting file: ' + error.message);
+                }
+            }
+        } else if (e.target.classList.contains('delete-folder-btn')) {
+            closeAllMenus();
+            e.stopPropagation();
+            const folderId = e.target.dataset.folderId;
+            if (confirm('Are you sure you want to delete this folder and all its contents?')) {
+                try {
+                    // Assuming deleteFolder is an async function
+                    deleteFolder(folderId, auth.currentUser.uid);
+                } catch (error) {
+                    alert('Error deleting folder: ' + error.message);
+                }
+            }
+        } else if (e.target.classList.contains('breadcrumb')) {
+            closeAllMenus();
+            const path = e.target.dataset.path || '';
             navigateToDirectory(path);
+        } else if (e.target.classList.contains('move-btn')) {
+            closeAllMenus();
+            const docId = e.target.dataset.docId;
+            const currentPath = e.target.dataset.currentPath || '';
+            openMoveModal(docId, currentPath);
+        } else if (e.target.closest('.folder-card')) {
+            const folderCard = e.target.closest('.folder-card');
+            if (!e.target.closest('.folder-actions') && !e.target.classList.contains('ellipsis-btn')) {
+                closeAllMenus();
+                const path = folderCard.dataset.path;
+                navigateToDirectory(path);
+            }
         }
+    });
+
+
+    // Create folder button
+    const createFolderBtn = document.getElementById('create-folder-btn');
+    if (createFolderBtn) {
+        createFolderBtn.addEventListener('click', () => {
+            document.getElementById('folder-modal').style.display = 'block';
+        });
     }
-});
 
-  // Create folder button
-  const createFolderBtn = document.getElementById('create-folder-btn');
-  if (createFolderBtn) {
-    createFolderBtn.addEventListener('click', () => {
-      document.getElementById('folder-modal').style.display = 'block';
-    });
-  }
-
-  // Upload file button
-  const uploadFileBtn = document.getElementById('upload-file-btn');
-  if (uploadFileBtn) {
-    uploadFileBtn.addEventListener('click', () => {
-      setUploadPath(currentPath); // <-- pass in the current folder path
-      document.getElementById('upload-modal').style.display = 'flex';
-    });
-  }
-
-  // Move form submission
-  const moveForm = document.getElementById('move-form');
-  if (moveForm) {
-    moveForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const docId = moveForm.dataset.docId;
-      const targetPath = document.getElementById('target-folder').value;
-      await moveFile(docId, targetPath);
-    });
-  }
-
-  // Cancel move button
-  const cancelMoveBtn = document.getElementById('cancel-move');
-  if (cancelMoveBtn) {
-    cancelMoveBtn.addEventListener('click', closeMoveModal);
-  }
-
-  // Handle file selection
-  fileInput.addEventListener('change', async () => {
-    if (fileInput.files.length > 0) {
-      const userId = auth.currentUser?.uid;
-      if (!userId) {
-        alert('Please sign in to upload files.');
-        return;
-      }
-      await handleFileUpload(fileInput.files, userId);
+    // Upload file button
+    const uploadFileBtn = document.getElementById('upload-file-btn');
+    if (uploadFileBtn) {
+        uploadFileBtn.addEventListener('click', () => {
+            setUploadPath(currentPath); // <-- pass in the current folder path
+            document.getElementById('upload-modal').style.display = 'flex';
+        });
     }
-  });
 
-  // Folder form submission
-  const folderForm = document.getElementById('folder-form');
-  if (folderForm) {
-    folderForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const folderName = document.getElementById('folder-name').value.trim();
-      if (folderName) {
-        await createFolder(folderName, auth.currentUser.uid);
-        document.getElementById('folder-name').value = '';
-        document.getElementById('folder-modal').style.display = 'none';
-      }
-    });
-  }
+    // Move form submission
+    const moveForm = document.getElementById('move-form');
+    if (moveForm) {
+        moveForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const docId = moveForm.dataset.docId;
+            const targetPath = document.getElementById('target-folder').value;
+            await moveFile(docId, targetPath);
+            closeMoveModal();
+        });
+    }
 
-  // Cancel folder creation
-  const cancelFolderBtn = document.getElementById('cancel-folder');
-  if (cancelFolderBtn) {
-    cancelFolderBtn.addEventListener('click', () => {
-      document.getElementById('folder-name').value = '';
-      document.getElementById('folder-modal').style.display = 'none';
-    });
-  }
+    // Cancel move button
+    const cancelMoveBtn = document.getElementById('cancel-move');
+    if (cancelMoveBtn) {
+        cancelMoveBtn.addEventListener('click', closeMoveModal);
+    }
 
-  // Rename folder form submission
-  const renameFolderForm = document.getElementById('rename-folder-form');
-  if (renameFolderForm) {
-    renameFolderForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const folderId = renameFolderForm.dataset.folderId;
-      const newName = document.getElementById('new-folder-name').value.trim();
-      if (newName) {
-        await renameFolder(folderId, newName);
-      }
-    });
-  }
+    // Handle file selection
+    // Ensure fileInput is defined in the scope or passed
+    // e.g., const fileInput = document.getElementById('file-input');
+    if (typeof fileInput !== 'undefined' && fileInput) {
+        fileInput.addEventListener('change', async () => {
+            if (fileInput.files.length > 0) {
+                const user = auth.currentUser;
+                if (!user) {
+                    alert('Please sign in to upload files.');
+                    return;
+                }
+                await handleFileUpload(fileInput.files, user.uid);
+            }
+        });
+    }
 
-  // Cancel rename folder button
-  const cancelRenameBtn = document.getElementById('cancel-rename-folder');
-  if (cancelRenameBtn) {
-    cancelRenameBtn.addEventListener('click', closeRenameFolderModal);
-  }
+    // Folder form submission
+    const folderForm = document.getElementById('folder-form');
+    if (folderForm) {
+        folderForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const folderName = document.getElementById('folder-name').value.trim();
+            if (folderName) {
+                await createFolder(folderName, auth.currentUser.uid);
+                document.getElementById('folder-name').value = '';
+                document.getElementById('folder-modal').style.display = 'none';
+            }
+        });
+    }
 
-  // Edit form submission
-  const editForm = document.getElementById('edit-form');
-  if (editForm) {
-    editForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const docId = editForm.dataset.docId;
-      const title = document.getElementById('edit-title').value;
-      const description = document.getElementById('edit-description').value;
-      const tags = document.getElementById('edit-tags').value;
-      const category = document.getElementById('edit-category').value;
-      await updateFileMetadata(docId, { title, description, tags, category });
-      closeEditModal();
-      // Refresh the file list
-      const user = auth.currentUser;
-      if (user) {
-        displayFiles(user.uid);
-      }
-    });
-  }
+    // Cancel folder creation
+    const cancelFolderBtn = document.getElementById('cancel-folder');
+    if (cancelFolderBtn) {
+        cancelFolderBtn.addEventListener('click', () => {
+            document.getElementById('folder-name').value = '';
+            document.getElementById('folder-modal').style.display = 'none';
+        });
+    }
 
-  // Close edit modal on cancel
-  const cancelBtn = document.getElementById('cancel-edit');
-  if (cancelBtn) {
-    cancelBtn.addEventListener('click', closeEditModal);
-  }
+    // Rename folder form submission
+    const renameFolderForm = document.getElementById('rename-folder-form');
+    if (renameFolderForm) {
+        renameFolderForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const folderId = renameFolderForm.dataset.folderId;
+            const newName = document.getElementById('new-folder-name').value.trim();
+            if (newName) {
+                await renameFolder(folderId, newName);
+                closeRenameFolderModal();
+            }
+        });
+    }
+
+    // Cancel rename folder button
+    const cancelRenameBtn = document.getElementById('cancel-rename-folder');
+    if (cancelRenameBtn) {
+        cancelRenameBtn.addEventListener('click', closeRenameFolderModal);
+    }
+
+    // Edit form submission
+    const editForm = document.getElementById('edit-form');
+    if (editForm) {
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const docId = editForm.dataset.docId;
+            const title = document.getElementById('edit-title').value;
+            const description = document.getElementById('edit-description').value;
+            const tags = document.getElementById('edit-tags').value;
+            const category = document.getElementById('edit-category').value;
+            await updateFileMetadata(docId, {
+                title,
+                description,
+                tags,
+                category
+            });
+            closeEditModal();
+            const user = auth.currentUser;
+            if (user) {
+                displayFiles(user.uid);
+            }
+        });
+    }
+
+    // Close edit modal on cancel
+    const cancelBtn = document.getElementById('cancel-edit');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeEditModal);
+    }
 }
 
 function initializeFileDisplay() {
-  const container = document.getElementById('files-container');
-  // Instead of replacing everything, just make sure the files-list section exists
-  // Only create the files-list if it doesn't exist already
-  let filesList = document.getElementById('files-list');
-  if (!filesList) {
-    filesList = document.createElement('section');
-    filesList.id = 'files-list';
-    container.appendChild(filesList);
-  }
-  return filesList;
+    const container = document.getElementById('files-container');
+    let filesList = document.getElementById('files-list');
+    if (!filesList) {
+        filesList = document.createElement('section');
+        filesList.id = 'files-list';
+        container.appendChild(filesList);
+    }
+    return filesList;
 }
 
 async function displayFiles(userId) {
@@ -458,27 +581,33 @@ async function displayFiles(userId) {
       const folderCard = document.createElement('section');
       folderCard.className = 'folder-card';
       folderCard.dataset.path = folder.fullPath;
+      // In displayFiles() where folders are created:
       folderCard.innerHTML = `
-         <section class="file-folder-row">
-            <section class="icon">${fileIcons.folder}</section>
-            <section class="name">${folder.name}</section>
-            <section class="type">Folder</section>
-            <section class="created">${formatDate(folder.createdAt?.toDate())}</section>
-            <section class="size">-</section>
-            <section class="actions">
-            <button class="ellipsis-btn" data-folder-id="${doc.id}" data-menu-type="folder">⋯</button>
-
-          <section class="folder-actions">
-            <section class="file-menu hidden" id="folder-menu-${doc.id}">
-              <button class="rename-folder-btn" data-folder-id="${doc.id}" data-current-name="${folder.name}"><img src="images/icons/rename.png" class="menu-icon" alt="Rename">Rename</button>
-              <button class="delete-folder-btn" data-folder-id="${doc.id}"><img src="images/icons/delete.png" class="menu-icon" alt="Delete">Delete</button>
-            </section>
+        <section class="file-folder-row">
+          <section class="icon">${fileIcons.folder}</section>
+          <section class="name">${folder.name}</section>
+          <section class="type">Folder</section>
+          <section class="created">${formatDate(folder.createdAt?.toDate())}</section>
+          <section class="size">-</section>
+          <section class="actions">
+            <button class="ellipsis-btn" data-folder-id="${doc.id}">⋯</button>
           </section>
         </section>
-        </section>
-        
       `;
-    
+
+      // And the folder menu creation:
+      const folderMenu = document.createElement('section');
+      folderMenu.className = 'folder-menu hidden';
+      folderMenu.id = `folder-menu-${doc.id}`;
+      folderMenu.innerHTML = `
+        <button class="rename-folder-btn" data-folder-id="${doc.id}" data-current-name="${folder.name}">
+          <img src="images/icons/rename.png" class="menu-icon" alt="Rename"> Rename
+        </button>
+        <button class="delete-folder-btn" data-folder-id="${doc.id}">
+          <img src="images/icons/delete.png" class="menu-icon" alt="Delete"> Delete
+        </button>
+      `;
+      document.body.appendChild(folderMenu);
       groupCard.appendChild(folderCard);
     });
 
@@ -499,6 +628,7 @@ async function displayFiles(userId) {
           return;
         }
         
+        // In the displayFiles function, modify the file card HTML generation:
         const card = document.createElement('section');
         card.className = 'file-card';
         card.innerHTML = `
@@ -509,37 +639,40 @@ async function displayFiles(userId) {
               <section class="created">${formatDate(file.uploadedAt?.toDate())}</section>
               <section class="size">${formatFileSize(file.size)}</section>
               <section class="actions">
-              <button class="ellipsis-btn" data-doc-id="${doc.id}">⋯</button>
-          
-              <section class="file-actions">
-              <section class="file-menu hidden" id="menu-${doc.id}">
-                <button class="view-btn" onclick="window.open('${file.url}', '_blank')">
-                  <img src="images/icons/view.png" class="menu-icon" alt="View"> View
-                </button>
-                <button class="download-btn" onclick="window.location.href='${file.url}'">
-                  <img src="images/icons/download.png" class="menu-icon" alt="Download"> Download
-                </button>
-                <button class="move-btn" 
-                  data-doc-id="${doc.id}"
-                  data-current-path="${file.path || ''}">
-                  <img src="images/icons/move.png" class="menu-icon" alt="Move"> Move
-                </button>
-                <button class="edit-btn" 
-                  data-doc-id="${doc.id}" 
-                  data-title="${file.metadata?.title || file.name || 'Untitled'}"
-                  data-description="${file.metadata?.description || ''}"
-                  data-tags="${file.metadata?.tags?.join(', ') || ''}"
-                  data-category="${file.metadata?.category || 'general'}">
-                  <img src="images/icons/edit.png" class="menu-icon" alt="Edit"> Edit
-                </button>
-                <button class="delete-btn" data-doc-id="${doc.id}" data-blob-name="${file.url}">
-                  <img src="images/icons/delete.png" class="menu-icon" alt="Delete"> Delete
-                </button>
+                <button class="ellipsis-btn" data-doc-id="${doc.id}">⋯</button>
               </section>
             </section>
-          </section>
-          </section>
         `;
+
+        // Create menu separately and append to body
+        const menu = document.createElement('section');
+        menu.className = 'file-menu hidden';
+        menu.id = `menu-${doc.id}`;
+        menu.innerHTML = `
+          <button class="view-btn" onclick="window.open('${file.url}', '_blank')">
+            <img src="images/icons/view.png" class="menu-icon" alt="View"> View
+          </button>
+          <button class="download-btn" onclick="window.location.href='${file.url}'">
+            <img src="images/icons/download.png" class="menu-icon" alt="Download"> Download
+          </button>
+          <button class="move-btn" 
+            data-doc-id="${doc.id}"
+            data-current-path="${file.path || ''}">
+            <img src="images/icons/move.png" class="menu-icon" alt="Move"> Move
+          </button>
+          <button class="edit-button" 
+            data-doc-id="${doc.id}" 
+            data-title="${file.metadata?.title || file.name || 'Untitled'}"
+            data-description="${file.metadata?.description || ''}"
+            data-tags="${file.metadata?.tags?.join(', ') || ''}"
+            data-category="${file.metadata?.category || 'general'}">
+            <img src="images/icons/edit.png" class="menu-icon" alt="Edit"> Edit
+          </button>
+          <button class="delete-btn" data-doc-id="${doc.id}" data-blob-name="${file.url}">
+            <img src="images/icons/delete.png" class="menu-icon" alt="Delete"> Delete
+          </button>
+        `;
+        document.body.appendChild(menu);
         groupCard.appendChild(card);
       }).catch(error => {
         console.error("Error testing URL:", error);
@@ -592,6 +725,11 @@ function updateBreadcrumbs() {
 }
 
 function navigateToDirectory(path) {
+  // Close any open menus
+  document.querySelectorAll('.file-menu, .folder-menu').forEach(menu => {
+    menu.classList.add('hidden');
+  });
+  
   currentPath = path;
   const user = auth.currentUser;
   if (user) {
