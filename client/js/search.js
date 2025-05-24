@@ -161,7 +161,7 @@ function appendSearchResult(file, resultsContainer, sortOption, insertSorted = t
             <a href="${file.url}" target="_blank" class="view-btn" data-fileid="${file.id}">
                 <img src="images/icons/view.png" alt="View">
             </a>
-            <a href="${file.url}" download="${file.name}" class="download-btn" data-fileid="${file.id}">
+            <a href="#" class="download-btn" data-fileid="${file.id}">
                 <img src="images/icons/download.png" alt="Download">
             </a>
         </div>
@@ -176,7 +176,9 @@ function appendSearchResult(file, resultsContainer, sortOption, insertSorted = t
     }
     if (downloadBtn) {
         downloadBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent default link behavior
             incrementFileStat(file.id, 'downloads');
+            window.open(file.url, '_blank');
         });
     }
 
