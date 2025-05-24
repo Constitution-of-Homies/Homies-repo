@@ -7,6 +7,8 @@
     <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="css/analytics.css"/>
     <link rel="stylesheet" href="css/sideBar.css"/>
+    <!-- Add Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <nav>
@@ -63,19 +65,44 @@
                 <p id="total-uploads">0</p>
             </section>
 
-            <section class="metric">
+            <section class="metric clickable" id="views-metric">
                 <h3>Total Views</h3>
                 <p id="total-views">0</p>
             </section>
 
-            <section class="metric">
+            <section class="metric clickable" id="downloads-metric">
                 <h3>Total Downloads</h3>
                 <p id="total-downloads">0</p>
             </section>
-
         </section>
 
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <div class="chart-container">
+                <canvas id="uploadsChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="viewsChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="downloadsChart"></canvas>
+            </div>
+        </section>
     </main>
+
+    <!-- Modal for showing document details -->
+    <div id="details-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Document Details</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div id="modal-body">
+                <div class="document-list" id="document-list"></div>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="js/analytics.js"></script>
 </body>
 </html>
