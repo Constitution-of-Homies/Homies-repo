@@ -37,7 +37,7 @@ main {
 }
 
 h1 {
-  font-size: 2rem;
+  font-size: 4rem;
   margin: 0 0 1.5rem;
   font-weight: bold;
   color: var(--primary-color);
@@ -52,7 +52,7 @@ h1::after {
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 80px;
+  width: 180px;
   height: 3px;
   background: var(--accent-color);
 }
@@ -105,7 +105,7 @@ h1::after {
 
 
 .action-btn:hover {
-  background: #0066b8;
+  background: var(--primary-color);
   transform: translateY(-1px);
   box-shadow: var(--shadow-hover);
 }
@@ -126,7 +126,7 @@ h1::after {
   padding: 0.3rem 0.6rem;
   cursor: pointer;
   font-family: var(--font-family);
-  font-size: 0.85rem;
+  font-size: 1.5rem;
   color: var(--accent-color);
   display: flex;
   align-items: center;
@@ -135,8 +135,14 @@ h1::after {
   transition: background 0.2s ease;
 }
 
+/* makes the folder youre currently in bold in the breadcrumbs directory */
+.breadcrumb.active {
+  font-weight: bold;
+
+}
+
 .breadcrumb:hover {
-  background: rgba(0, 120, 212, 0.1);
+  background: var(--secondary-color);
 }
 
 .breadcrumb::after {
@@ -161,7 +167,9 @@ h1::after {
   display: flex;
   flex-direction: column;
   gap: 0;
+  min-width: 800px;
   width: 100%;
+  overflow-x: auto;
   justify-content: space-between;
 }
 
@@ -171,6 +179,7 @@ h1::after {
   align-items: center;
   padding: 0.75rem 1rem;
   border-bottom: 2px solid #ccc;
+  border-radius:var(--border-radius) ;
   background: white;
   font-weight: bold;
   font-size: 0.9rem;
@@ -193,11 +202,9 @@ h1::after {
 }
 
 .file-card {
-  border-left: 4px solid var(--accent-color);
 }
 
 .folder-card {
-  border-left: 4px solid var(--warning-color);
   cursor: pointer;
 }
 
@@ -231,6 +238,7 @@ h1::after {
   display: flex;
   gap: 0.6rem;
   flex-wrap: wrap;
+  position: relative;
 }
 
 .file-actions a, 
@@ -272,7 +280,7 @@ h1::after {
 
 
 .edit-btn {
-  background: var(--success-color);
+  background: var(--warning-color);
   color: white;
 }
 
@@ -283,6 +291,14 @@ h1::after {
 
 .move-btn {
   background: var(--warning-color);
+  color: white;
+}
+.download-btn {
+  background: var(--error-color);
+  color: white;
+}
+.view-btn {
+  background: var(--error-color);
   color: white;
 }
 /* Modals */
@@ -385,11 +401,11 @@ h1::after {
 }
 
 .modal-actions button[type="submit"]:hover {
-  background: #0066b8;
+  background: var(--secondary-color);
 }
 
 .modal-actions button[type="button"]:hover {
-  background: #e0e0e0;
+  background: var(--secondary-color);
 }
 
 /* Status Messages */
@@ -471,7 +487,7 @@ h1::after {
 .file-menu {
   position: absolute;
   top: 100%;  /* Appears directly below the ellipsis */
-  right: 0;
+  left: 1000%;
   background: white;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -500,9 +516,21 @@ h1::after {
   width: 100%;
   color: var(--primary-color);
   transition: background 0.2s ease;
+  padding: 0.5rem;
+  min-width: 100px;
+  text-align: left;
 }
 
 .file-menu a:hover,
 .file-menu button:hover {
   background: #f0f0f0;
+}
+
+.menu-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+  display: inline-block;
+  object-fit: contain;
 }
