@@ -117,7 +117,7 @@ async function performSearch() {
             resultsContainer.innerHTML = ''; // Clear and re-render for final sort
             sortedResults.forEach(result => appendSearchResult(result, resultsContainer, currentSort, false));
         } else if (window.currentSearchResults.length === 0 && resultsContainer) {
-            resultsContainer.innerHTML = '<p>No results found with relevance above 0.</p>';
+            resultsContainer.innerHTML = '<p>No results found</p>';
         }
 
         // Add search-active class
@@ -148,7 +148,6 @@ function appendSearchResult(file, resultsContainer, sortOption, insertSorted = t
         <div class="search-result-icon">${fileIcon}</div>
         <div class="search-result-details">
             <h3>${file.metadata?.title || file.name || 'Untitled'}</h3>
-            ${file.uploadedBy ? `<p class="search-result-uploader">Uploaded by: ${file.uploadedByName || 'Anonymous'}</p>` : ''}
             <p class="search-result-snippet">${file.contentSnippet}</p>
             <p class="search-result-description">${file.metadata?.description || 'No description'}</p>
             <div class="search-result-meta">
@@ -420,7 +419,6 @@ function displaySearchResults(allResults) {
             <div class="search-result-icon">${fileIcon}</div>
             <div class="search-result-details">
                 <h3>${file.metadata?.title || file.name || 'Untitled'}</h3>
-                ${file.uploadedBy ? `<p class="search-result-uploader">Uploaded by: ${file.uploadedByName || 'Anonymous'}</p>` : ''}
                 <p class="search-result-snippet">${file.contentSnippet}</p>
                 <p class="search-result-description">${file.metadata?.description || 'No description'}</p>
                 <div class="search-result-meta">
