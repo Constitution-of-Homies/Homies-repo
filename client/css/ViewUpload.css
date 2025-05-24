@@ -201,9 +201,6 @@ h1::after {
   align-items: center;
 }
 
-.file-card {
-}
-
 .folder-card {
   cursor: pointer;
 }
@@ -234,7 +231,12 @@ h1::after {
 }
 
 /* Action Buttons */
-.file-actions, .folder-actions {
+.file-actions {
+  display: flex;
+  align-items: center;
+}
+
+.folder-actions {
   display: flex;
   gap: 0.6rem;
   flex-wrap: wrap;
@@ -539,7 +541,7 @@ h1::after {
   font-size: 1.2rem;
   cursor: pointer;
   padding: 0;
-  opacity: 0.7;
+  opacity: 0;
   transition: opacity 0.2s ease;
   justify-self: end;
 }
@@ -552,52 +554,51 @@ h1::after {
   opacity: 1;
 }
 
-.file-actions {
-  position: relative; /* This makes it the positioning context for .file-menu */
-}
-
-.folder-actions {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.file-menu {
+/* Shared menu styles */
+.file-menu, .folder-menu {
   position: absolute;
-  top: 100%;
-  left: 1000%;
   background: white;
   border: 1px solid #ccc;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  display: flex;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.75rem;
   z-index: 1000;
   min-width: 150px;
-  transform: translateX(-10px);
 }
-.file-menu:not(.hidden) {
+
+/* Remove positioning constraints from parent elements */
+.file-actions, .folder-actions {
+  display: flex;
+  align-items: center;
+  position: static; /* Remove relative positioning */
+}
+
+.file-menu:not(.hidden), .folder-menu:not(.hidden) {
+  display: flex;
   animation: fadeIn 0.15s ease-out;
 }
+
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateX(-10px) translateY(5px);
+    transform: translateY(5px);
   }
   to {
     opacity: 1;
-    transform: translateX(-10px) translateY(0);
+    transform: translateY(0);
   }
 }
 
-.file-menu.hidden {
-  display: none;
+.file-menu.hidden, .folder-menu.hidden {
+  display: none; /* Hide when the hidden class is applied */
 }
 
 .file-menu a,
-.file-menu button {
+.file-menu button,
+.folder-menu a,
+.folder-menu button {
   background: none;
   border: none;
   padding: 0.4rem;
@@ -613,7 +614,9 @@ h1::after {
 }
 
 .file-menu a:hover,
-.file-menu button:hover {
+.file-menu button:hover,
+.folder-menu a:hover,
+.folder-menu button:hover {
   background: #f0f0f0;
 }
 
