@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Health Status</title>
+    <link rel="stylesheet" href="css/health.css">
+</head>
+<body>
+    <main class="health-container">
+        <section>
+            <h1>API Health Status</h1>
+            <p id="status" class="status-loading">Loading...</p>
+            <pre id="details" class="health-details"></pre> </section>
+    </main>
+
+    <script>
+        // JavaScript to call your API and update the content will go here
+        // Refer to the previous explanation on how to call your API (Method 1 or Method 2)
+
+        const statusElement = document.getElementById('status');
+        const detailsElement = document.getElementById('details');
+
+        // Example function to fetch health status (replace with your actual API call logic)
+        async function checkHealth() {
+            try {
+                // Replace with your actual API endpoint:
+                // If using the linking method: '/api/health'
+                // If using direct call: 'https://scriptorium.azurewebsites.net/api/health'
+                const response = await fetch('https://scriptorium.azurewebsites.net/api/health'); // Assuming linking method for this example
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json(); // Adjust based on your API response type (e.g., .text())
+
+                // Update status display based on your API's response structure
+                // This is a generic example, adjust based on what your /api/health returns
+                if (data && data.status === 'Healthy') { // Example: your API returns { status: 'Healthy' }
+                    statusElement.textContent = 'Status: Healthy';
+                    statusElement.className = 'status-healthy';
+                } else {
+                     statusElement.textContent = 'Status: Unhealthy';
+                     statusElement.className = 'status-unhealthy';
+                }
+
+                // Display additional details if available
+                if (data && data.details) { // Example: your API returns { details: '...' }
+                    detailsElement.textContent = 'Details: ' + JSON.stringify(data.details, null, 2);
+                } else {
+                     detailsElement.textContent = 'No details available.';
+                }
+
+
+            } catch (error) {
+                console.error('Error fetching health status:', error);
+                statusElement.textContent = 'Status: Error';
+                statusElement.className = 'status-error';
+                detailsElement.textContent = 'Could not fetch health status.';
+            }
+        }
+
+        // Call the function when the page loads
+        checkHealth();
+
+    </script>
+</body>
+</html>

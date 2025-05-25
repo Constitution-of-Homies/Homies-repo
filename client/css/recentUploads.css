@@ -1,0 +1,151 @@
+.recent-uploads {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 800px;
+}
+
+.recent-uploads h2 {
+    margin-bottom: 1.5rem;
+    color: #333;
+    font-size: 2rem;
+}
+
+.recent-uploads-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.recent-upload-item {
+    display: flex;
+    gap: 1rem;
+    text-align: left;
+    padding: 1rem;
+    border-radius: 8px;
+    background: #f8f9fa;
+    transition: all 0.2s ease;
+    border: 1px solid #eaeaea;
+}
+
+.recent-upload-item:hover {
+    background: #f1f3f5;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.recent-upload-item .file-icon {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    flex-shrink: 0;
+    align-self: flex-start;
+}
+
+.recent-upload-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.recent-upload-title {
+    margin: 0;
+    font-size: 1rem;
+    color: #2c3e50;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.recent-upload-description {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #7f8c8d;
+    line-height: 1.4;
+    margin-bottom: 0.75rem;
+    max-height: 2.8em; /* Approximate 2 lines of text */
+    overflow: hidden;
+    position: relative;
+}
+
+.recent-upload-description::after {
+    content: "";
+    text-align: right;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 30%;
+    height: 1.4em;
+    background: linear-gradient(to right, rgba(248, 249, 250, 0), rgba(248, 249, 250, 1) 50%);
+}
+
+.recent-upload-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.8rem;
+    color: #95a5a6;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.meta-icon {
+    width: 14px;
+    height: 14px;
+    opacity: 0.8;
+}
+
+.meta-value {
+    font-size: 0.8rem;
+}
+
+.upload-date {
+    margin-left: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .recent-upload-item {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .recent-upload-item .file-icon {
+        align-self: center;
+    }
+    
+    .recent-upload-meta {
+        gap: 0.75rem;
+    }
+    
+    .upload-date {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    .recent-upload-description {
+        max-height: none;
+    }
+    
+    .recent-upload-description::after {
+        display: none;
+    }
+}
+
+.empty-message {
+    color: #95a5a6;
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
+}
+
+.error-message {
+    color: #e74c3c;
+    text-align: center;
+    padding: 1rem;
+}

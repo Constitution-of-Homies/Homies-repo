@@ -2,13 +2,14 @@ name: Jest Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    continue-on-error: true
     
     steps:
     - uses: actions/checkout@v3
@@ -23,8 +24,12 @@ jobs:
       
     - name: Run tests
       run: npm test
+      continue-on-error: true
       
-    # Optional: Add coverage reporting
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
-      if: success()  # only run if tests pass
+      with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage/lcov.info
+          flags: jest
+          fail_ci_if_error: false

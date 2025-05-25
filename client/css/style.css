@@ -2,6 +2,7 @@
   /* Colors */
   --primary-color: #606060;
   --secondary-color: #d9d9d9;
+  --signout-color: #FFB3A7;
 
   /* Spacing */
   --padding: 1rem;
@@ -19,17 +20,11 @@
 
 body {
   font-family: 'Courier New', Courier, monospace;
-  background-color: #d9d9d9;
+  background-color: var(--secondary-color);
   color: #333;
   line-height: 1.6;
 }
 
-main {
-  padding: 2rem;
-  max-width: 800px;
-  margin: auto;
-  text-align: center;
-}
 
 h2 {
   font-size: 1.8rem;
@@ -38,5 +33,5 @@ h2 {
 
 .filler {
   height: 100vh;
-  background-color: #d9d9d9;
+  background-color: var(--secondary-color);
 }

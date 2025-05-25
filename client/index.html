@@ -1,38 +1,135 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Scriptorium</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/nav.css" />
-  <link rel="stylesheet" href="css/footer.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scriptorium</title>
+    <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/search.css">
 </head>
 <body>
-  <header>
-    <img src="./images/logo20x4.png" alt="Scriptorium Logo" class="logo" />
     <nav>
-      <ul>
-        <li><a href="#">Home</a></li>
-        <li><a href="login.html">Login</a></li>
-        <li><a href="signup.html">Sign Up</a></li>
-        <!-- <li><a href="#" class="profile"></a></li> -->
-      </ul>
+        <section class="logo">
+            <img src="./images/1x1-dark-feather.png" alt="Scriptorium Logo" class="logo-img">
+            <p class="logo-text">Scriptorium</p>
+        </section>
+        
+        <ul>
+            <li>
+                <img src="./images/icons/home.png" alt="Home" class="nav-icon">
+                <p class="nav-text">Home</p>
+            </li>
+            <li>
+                <img src="./images/icons/dashboard.png" alt="Dashboard" class="nav-icon">
+                <p class="nav-text">Dashboard</p>
+            </li>
+        </ul>
+        <section class="profile-section">
+            <li class="profile-item" aria-haspopup="true" aria-expanded="false">
+                <img src="./images/icons/user.png" alt="Profile" class="nav-icon">
+                <p class="nav-text">Profile</p>
+                <ul class="profile-options">
+                    <li>
+                        <a href="login.html" class="nav-link">
+                            <img src="./images/icons/login.png" alt="Login" class="nav-icon">
+                            <p class="nav-text">Login</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="signup.html" class="nav-link">
+                            <img src="./images/icons/signup.png" alt="Sign Up" class="nav-icon">
+                            <p class="nav-text">Sign Up</p>
+                        </a>
+                    </li>
+                </ul>
+            </section>
+        </section>
     </nav>
-  </header>
+    <main>
+        <section class="centered-content">
+            <img src="./images/logo-long.png" alt="Scriptorium Logo" class="main-logo">
+            <section class="search-container">
+                <input type="text" class="search-input" placeholder="Search files...">
+                <button class="search-button">
+                    <img src="./images/icons/search.png" alt="Search" class="search-icon">
+                </button>
+                <button class="filter-button">
+                    <img src="./images/icons/filter.png" alt="Filter" class="filter-icon">
+                </button>
+            </section>
+            <section class="filter-section">
+                <!-- <section class="nlp-toggle">
+                    <label for="nlp-toggle">Use NLP Search</label>
+                    <input type="checkbox" id="nlp-toggle" name="nlp-toggle">
+                </section> -->
+                <section class="filter-row">
+                    <section class="filter-group">
+                        <label for="filter-type">Type</label>
+                        <select id="filter-type">
+                            <option value="">All types</option>
+                            <option value="image">Images</option>
+                            <option value="video">Videos</option>
+                            <option value="audio">Audio</option>
+                            <option value="document">Documents</option>
+                            <option value="spreadsheet">Spreadsheets</option>
+                            <option value="presentation">Presentations</option>
+                            <option value="archive">Archives</option>
+                            <option value="code">Code</option>
+                            <option value="pdf">PDFs</option>
+                        </select>
+                    </section>
+                    <section class="filter-group">
+                        <label for="filter-category">Category</label>
+                        <select id="filter-category">
+                            <option value="">All categories</option>
+                            <option value="general">General</option>
+                            <option value="work">Work</option>
+                            <option value="personal">Personal</option>
+                            <option value="education">Education</option>
+                        </select>
+                    </section>
+                </section>
+                <section class="filter-row">
+                    <section class="filter-group">
+                        <label for="filter-date">Date</label>
+                        <select id="filter-date">
+                            <option value="">Any time</option>
+                            <option value="day">Today</option>
+                            <option value="week">This week</option>
+                            <option value="month">This month</option>
+                            <option value="year">This year</option>
+                        </select>
+                    </section>
+                    <section class="filter-group">
+                        <label for="filter-tags">Tags</label>
+                        <input type="text" id="filter-tags" placeholder="Enter tags...">
+                    </section>
+                </section>
+            </section>
+            <section class="search-results-container" style="display: none;">
+                <header class="search-results-header">
+                    <h2>Search Results</h2>
+                    <section class="sort-group">
+                        <label for="sort-option">Sort by</label>
+                        <select id="sort-option" onchange="performSearch()">
+                            <option value="relevance">Relevance</option>
+                            <option value="title-asc">Title (A-Z)</option>
+                            <option value="title-desc">Title (Z-A)</option>
+                            <option value="date-desc">Date (Newest first)</option>
+                            <option value="date-asc">Date (Oldest first)</option>
+                            <option value="size-asc">Size (Smallest first)</option>
+                            <option value="size-desc">Size (Largest first)</option>
+                        </select>
+                    </section>
+                </header>
+                <section class="search-results-grid" id="search-results"></section>
+                <button class="clear-search-btn">Clear Results</button>
+            </section>
+        </section>
+    </main>
 
-  <main>
-    <section>
-      <h2>Welcome</h2>
-      <p>
-        This platform allows for the structured upload and public search of historical constitutional data
-        using natural language queries. Designed for researchers, historians, and the general public.
-      </p>
-    </section>
-  </main>
-
-  <footer>
-    <small>© 2025 Scriptorium</small>
-  </footer>
+    <script type="module" src="./js/home.js"></script>
+    <script type="module" src="./js/search.js"></script>
 </body>
 </html>

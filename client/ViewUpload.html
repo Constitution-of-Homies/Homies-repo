@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Uploads | Scriptorium</title>
+  <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="css/ViewUpload.css">
+  <link rel="stylesheet" href="css/upload.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/back.css">
+  <link rel="stylesheet" href="css/profile.css">
+  <link rel="stylesheet" href="css/drawer.css"/>
+  <link rel="stylesheet" href="css/sideBar.css"/>    
+</head>
+<body>
+  <nav>
+    <section class="logo">
+      <img src="./images/1x1-dark-feather.png" alt="Scriptorium Logo" class="logo-img">
+      <p class="logo-text">Scriptorium</p>
+    </section>
+    
+    <section class="side-menu">
+      <section class="nav-items">
+              <ul>
+                  <li>
+                      <a href="index.html">
+                          <img src="./images/icons/home.png" alt="Home" class="nav-icon">
+                          <p class="nav-text">Home</p>
+                      </a>
+                  </li>
+                  <li>
+                      <a href="profile.html">
+                          <img src="./images/icons/dashboard.png" alt="Dashboard" class="nav-icon">
+                          <p class="nav-text">Dashboard</p>
+                      </a>
+                  </li>
+                   <li>
+                      <a href="analytics.html">
+                          <img src="./images/icons/chart.png" alt="Analytics" class="nav-icon">
+                          <p class="nav-text">Analytics</p>
+                      </a>
+                  </li>
+                  <li>
+                      <a href="settings.html">
+                          <img src="./images/icons/settings.png" alt="Settings" class="nav-icon">
+                          <p class="nav-text">Settings</p>
+                      </a>
+                  </li>
+              </ul>
+          </section>
+
+          <section class="signout-container">
+              <button id="sign-out-btn">
+                  <img src="./images/icons/logout.png" alt="Signout" class="nav-icon">
+                  <p class="nav-text">Sign Out</p>
+              </button>
+            </section>
+      </section>
+  </nav>
+  <main class="dashboard-layout">
+
+    <section class="main-content">
+    <h1>Files Archive</h1>
+    <!-- <button class="back-button" onclick="window.location.href='profile.html'">← Go Back</button> -->
+    <!-- Breadcrumbs -->
+    <section id="directory-breadcrumbs" class="breadcrumbs">
+      <button class="breadcrumb" data-path="">Home</button>
+    </section>
+
+    <section class="directory-controls">
+      <button id="create-folder-btn" class="action-btn">
+        <img src="images/icons/folder.png" alt="Create Folder" class="action-icon">
+        <section>Create Folder</section>
+      </button>
+      <button id="upload-file-btn" class="action-btn">
+        <img src="./images/icons/upload.png" alt="Upload File" class="action-icon">
+        <section>Upload File</section>
+      </button>
+    </section>
+
+    <section class="file-headers list-view-header">
+      <section></section>
+      <section class="sortable-header" data-sort-by="name">Name <p class="sort-indicator"></p></section>
+      <section class="sortable-header" data-sort-by="type">Type <p class="sort-indicator"></p></section>
+      <section class="sortable-header" data-sort-by="date">Date Uploaded <p class="sort-indicator"></p></section>
+      <section class="sortable-header" data-sort-by="size">Size <p class="sort-indicator"></p></section>
+      <section></section>
+    </section>
+
+    <section class="file-display-container">
+      <section id="files-container"></section>
+    </section>
+  </main>
+
+  <!-- Edit Modal -->
+  <section id="edit-modal" class="modal">
+    <section class="modal-content">
+      <h2>Edit File Metadata</h2>
+      <form id="edit-form">
+        <label for="edit-title">Title</label>
+        <input type="text" id="edit-title" name="title" required>
+        <label for="edit-description">Description</label>
+        <textarea id="edit-description" name="description"></textarea>
+        <label for="edit-tags">Tags (comma separated)</label>
+        <input type="text" id="edit-tags" name="tags">
+        <label for="edit-category">Category</label>
+        <select id="edit-category" name="category">
+          <option value="general">General</option>
+          <option value="work">Work</option>
+          <option value="personal">Personal</option>
+          <option value="media">Media</option>
+          <option value="documents">Documents</option>
+        </select>
+        <section class="modal-actions">
+          <button type="button" id="cancel-edit">Cancel</button>
+          <button type="submit">Save</button>
+        </section>
+      </form>
+    </section>
+  </section>
+
+  <!-- Create Folder Modal -->
+  <section id="folder-modal" class="modal">
+    <section class="modal-content">
+      <h2>Create New Folder</h2>
+      <form id="folder-form">
+        <label for="folder-name">Folder Name</label>
+        <input type="text" id="folder-name" name="name" required>
+        <section class="modal-actions">
+          <button type="button" id="cancel-folder">Cancel</button>
+          <button type="submit">Create</button>
+        </section>
+      </form>
+    </section>
+  </section>
+
+  <!-- Move Modal -->
+  <section id="move-modal" class="modal">
+    <section class="modal-content">
+      <h2>Move File</h2>
+      <form id="move-form">
+        <p>Current Location: <p id="current-folder"></p></p>
+        <section class="form-group">
+          <label for="target-folder">Move to:</label>
+          <select id="target-folder" required>
+            <option value="">Loading folders...</option>
+          </select>
+        </section>
+        <section class="modal-actions">
+          <button type="button" id="cancel-move">Cancel</button>
+          <button type="submit">Move File</button>
+        </section>
+      </form>
+    </section>
+  </section>
+  
+  <!-- Rename Folder Modal -->
+  <section id="rename-folder-modal" class="modal">
+    <section class="modal-content">
+      <h2>Rename Folder</h2>
+      <form id="rename-folder-form">
+        <label for="new-folder-name">New Folder Name</label>
+        <input type="text" id="new-folder-name" name="name" required>
+        <section class="modal-actions">
+          <button type="button" id="cancel-rename-folder">Cancel</button>
+          <button type="submit">Rename</button>
+        </section>
+      </form>
+    </section>
+  </section>
+
+  <!-- Upload Modal (from upload.html) -->
+  <section id="upload-modal" class="modal">
+    <section class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+      <h2>Upload Files</h2>
+      <section class="upload-container">
+        <section class="drop-zone" id="dropZone">
+          <p class="drop-zone__prompt">Drop files here or click to select</p>
+          <input type="file" id="fileInput" class="drop-zone__input" multiple>
+        </section>
+
+        <section class="file-preview" id="filePreview">
+          <h3>Files to Upload</h3>
+          <section id="previewList"></section>
+        </section>
+
+        <button class="upload-btn" id="uploadBtn">Upload Files</button>
+        <button class="cancel-btn" id="cancelBtn">Clear Selection</button>
+      </section>
+
+      <section class="progress-container" id="progressContainer">
+        <section id="fileInfo">Uploading file...</section>
+        <section class="progress-bar">
+          <section class="progress-fill" id="progressBar"></section>
+        </section>
+        <section id="progressText">0%</section>
+      </section>
+
+      <section class="file-list" id="fileList"></section>
+    </section>
+  </section>
+
+  <!-- Scripts -->
+  <script type="module" src="js/ViewUpload.js"></script>
+  <script type="module" src="js/upload.js"></script>
+  <script type="module" src="js/home.js"></script>
+
+  <!-- Close modal when clicking outside -->
+  <script>
+    document.getElementById('upload-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'upload-modal') {
+        document.getElementById('upload-modal').style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

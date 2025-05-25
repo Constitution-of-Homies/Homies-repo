@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scriptorium - Profile</title>
+    <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="css/profile.css"/>
+    <link rel="stylesheet" href="css/drawer.css"/>
+    <link rel="stylesheet" href="css/sideBar.css"/>
+    <link rel="stylesheet" href="css/recentUploads.css"/>
+</head>
+<body>
+    <nav>
+        <section class="logo">
+            <img src="./images/1x1-dark-feather.png" alt="Scriptorium Logo" class="logo-img">
+            <p class="logo-text">Scriptorium</p>
+        </section>
+
+        <section class="side-menu">
+            <section class="nav-items">
+                <ul>
+                    <li>
+                        <a href="index.html">
+                            <img src="./images/icons/home.png" alt="Home" class="nav-icon">
+                            <p class="nav-text">Home</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="ViewUpload.html">
+                            <img src="./images/icons/upload.png" alt="Uploads" class="nav-icon">
+                            <p class="nav-text">My Uploads</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="analytics.html">
+                            <img src="./images/icons/chart.png" alt="Analytics" class="nav-icon">
+                            <p class="nav-text">Analytics</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="settings.html">
+                            <img src="./images/icons/settings.png" alt="Settings" class="nav-icon">
+                            <p class="nav-text">Settings</p>
+                        </a>
+                    </li>
+                </ul>
+            </section>
+
+            <section class="signout-container">
+                <button id="sign-out-btn">
+                    <img src="./images/icons/logout.png" alt="Signout" class="nav-icon">
+                    <p class="nav-text">Sign Out</p>
+                </button>
+            </section>
+        </section>
+    </nav>
+        
+    <main>
+        <section class="main-section">
+            <section class="profile-section">
+                <section class="profile-content">
+                    <img src="images/icons/user.png" alt="Profile" class="profile-image" />
+                    <section class="profile-info">
+                        <h3 id="profile-name"></h3>
+                        <p id="profile-bio"></p>
+                    </section>
+                </section>
+                <button id="edit-profile-btn">Edit</button>
+            </section>
+
+            <section class="recent-uploads">
+                <h2>Recent Uploads</h2>
+                <section id="recentUploadsContainer"></section> 
+            </section>
+        </section>
+
+        <section id="edit-drawer" class="drawer hidden">
+            <section class="drawer-backdrop"></section>
+            <section class="edit-profile-drawer">
+                <h2>Edit Profile</h2>
+                <form>
+                    <section class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name">
+                    </section>
+
+                    <section class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email">
+                    </section>
+
+                    <section class="form-actions">
+                        <button id="save-btn">Save</button>
+                        <button id="cancel-btn">Cancel</button>
+                    </section>
+                </form>
+            </section>
+        </section>
+    </main>
+    <script type="module" src="js/profile.js"></script>
+    <script type="module" src="js/recentUpload.js"></script>
+</body>
+</html>

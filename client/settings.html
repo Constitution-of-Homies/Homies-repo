@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Scriptorium</title>
+    <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="css/settings.css"/>
+    <link rel="stylesheet" href="css/sideBar.css"/>
+</head>
+<body>
+    <nav>
+        <section class="logo">
+            <img src="./images/1x1-dark-feather.png" alt="Scriptorium Logo" class="logo-img">
+            <p class="logo-text">Scriptorium</p>
+        </section>
+
+        <section class="side-menu">
+            <section class="nav-items">
+                <ul>
+                    <li>
+                        <a href="index.html">
+                            <img src="./images/icons/home.png" alt="Home" class="nav-icon">
+                            <p class="nav-text">Home</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="profile.html">
+                            <img src="./images/icons/dashboard.png" alt="Dashboard" class="nav-icon">
+                            <p class="nav-text">Dashboard</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="ViewUpload.html">
+                            <img src="./images/icons/upload.png" alt="Uploads" class="nav-icon">
+                            <p class="nav-text">My Uploads</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="analytics.html">
+                            <img src="./images/icons/chart.png" alt="Analytics" class="nav-icon">
+                            <p class="nav-text">Analytics</p>
+                        </a>
+                    </li>
+                </ul>
+            </section>
+
+            <section class="signout-container">
+                <button id="sign-out-btn">
+                    <img src="./images/icons/logout.png" alt="Signout" class="nav-icon">
+                    <p class="nav-text">Sign Out</p>
+                </button>
+            </section>
+    </nav>
+    <main class="settings-page">
+        <h2>Settings</h2>
+        
+        <section class="account-settings">
+            <h3>Account Settings</h3>
+            <button id="update-profile-btn">Update Profile</button>
+            <button id="delete-profile-btn">Delete Account</button>
+            
+        </section>
+        
+        <section class="privacy-settings">
+            <h3>Privacy and Security</h3>
+            <button id="manage-permissions-btn">Manage Permissions</button>
+            <button id="two-fa-btn">Enable Two-Factor Authentication</button>
+        </section>
+        
+        <section class="notifications">
+            <h3>Notifications</h3>
+            <p>Enable notifications for uploads and downloads</p>
+            <label class="toggle-switch">
+                <input type="checkbox" id="email-notify-toggle">
+                <section class="slider"></section>
+            </label>
+        </section>
+
+        <section class="app-preferences">
+            <h3>App Preferences</h3>
+            <button id="change-theme-btn">Change Theme</button>
+            <button id="set-lang-btn">Set Language</button>
+        </section>
+
+    </main>
+    <script type="module" src="js/settings.js"></script>
+</body>
+</html>
