@@ -114,7 +114,6 @@ main.analytics-dashboard {
 main.analytics-dashboard h2 {
     font-size: 2rem;
     margin-bottom: 2rem;
-    text-align: center;
     color: black;
     border-bottom: 0.1px solid rgb(194, 194, 194);
     padding-bottom: 0.5rem;
