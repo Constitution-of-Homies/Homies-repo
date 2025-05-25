@@ -52,7 +52,7 @@
 
           <section class="signout-container">
               <button id="sign-out-btn">
-                  <img src="./images/icons/sign-out.png" alt="Signout" class="nav-icon">
+                  <img src="./images/icons/logout.png" alt="Signout" class="nav-icon">
                   <p class="nav-text">Sign Out</p>
               </button>
             </section>
@@ -79,16 +79,17 @@
       </button>
     </section>
 
-    <section id="files-container">
-      <section class="file-headers list-view-header">
-        <section><!-- icon --></section> 
-        <section>Name</section>
-        <section>Type</section>
-        <section>Date Uploaded</section>
-        <section>Size</section>
-        <section><!-- actions  --></section>
-        </section>
-      </section>
+    <section class="file-headers list-view-header">
+      <section></section>
+      <section class="sortable-header" data-sort-by="name">Name <p class="sort-indicator"></p></section>
+      <section class="sortable-header" data-sort-by="type">Type <p class="sort-indicator"></p></section>
+      <section class="sortable-header" data-sort-by="date">Date Uploaded <p class="sort-indicator"></p></section>
+      <section class="sortable-header" data-sort-by="size">Size <p class="sort-indicator"></p></section>
+      <section></section>
+    </section>
+
+    <section class="file-display-container">
+      <section id="files-container"></section>
     </section>
   </main>
 

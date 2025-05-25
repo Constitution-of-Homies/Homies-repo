@@ -7,12 +7,12 @@
   --error-color: #F44336;
   --warning-color: #FF9800;
   --purple-color: #9C27B0;
-  
+
   /* Spacing */
   --padding: 1rem;
   --margin: 1rem;
   --border-radius: 8px;
-  
+
   /* Typography */
   --font-family: 'Courier New', Courier, monospace;
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -37,24 +37,11 @@ main {
 }
 
 h1 {
-  font-size: 4rem;
-  margin: 0 0 1.5rem;
-  font-weight: bold;
-  color: var(--primary-color);
-  text-align: center;
-  position: relative;
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  color: black;
+  border-bottom: 0.1px solid rgb(194, 194, 194);
   padding-bottom: 0.5rem;
-}
-
-h1::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 150px;
-  height: 3px;
-  background: var(--accent-color);
 }
 
 /* Navigation */
@@ -126,7 +113,7 @@ h1::after {
   padding: 0.3rem 0.6rem;
   cursor: pointer;
   font-family: var(--font-family);
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   color: var(--accent-color);
   display: flex;
   align-items: center;
@@ -243,7 +230,7 @@ h1::after {
   position: relative;
 }
 
-.file-actions a, 
+.file-actions a,
 .file-actions button,
 .folder-actions button {
   padding: 0.5rem 0.8rem;
@@ -273,7 +260,7 @@ h1::after {
   color: var(--primary-color);
 }
 
-.file-actions a:hover, 
+.file-actions a:hover,
 .file-actions button:hover,
 .folder-actions button:hover {
   transform: translateY(-1px);
@@ -479,9 +466,9 @@ nav:hover #sign-out-btn .nav-text {
   transform: scale(0.98);
 }
 /* Status Messages */
-.loading, 
-.empty-message, 
-.auth-message, 
+.loading,
+.empty-message,
+.auth-message,
 .error-message {
   text-align: center;
   padding: 2rem;
@@ -533,7 +520,7 @@ nav:hover #sign-out-btn .nav-text {
   text-align: center;
   min-width: 40px;
   width: 100%;
-  overflow: visible; 
+  overflow: visible;
 }
 
 .file-folder-row .name {
@@ -666,15 +653,103 @@ nav:hover #sign-out-btn .nav-text {
   object-fit: contain;
 }
 
+/* Enhanced File Sorting Header Styles */
 .list-view-header {
   display: grid;
-  grid-template-columns:  40px 2fr 1fr 1fr 80px 40px;  /* icon, name, type, date, size, actions */
+  grid-template-columns: 40px 2fr 1fr 1fr 80px 40px;
   align-items: center;
   padding: 0.75rem 1rem;
-  border-bottom: 2px solid #ccc;
   background: white;
   font-weight: bold;
   font-size: 0.9rem;
   color: var(--primary-color);
   gap: 0.5rem;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding: 0.5rem 1.5rem 0.5rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.sortable-header:hover {
+  background-color: rgba(0, 120, 212, 0.05);
+}
+
+.sortable-header.active-sort {
+  color: var(--accent-color);
+}
+
+.sort-indicator {
+  position: absolute;
+  right: 0.5rem;
+  width: 16px;
+  height: 16px;
+  opacity: 0; /* Still hide it by default */
+  transition: opacity 0.2s ease;
+  /* Add display flex to allow centering of the pseudo-element if needed, though not strictly required for this arrow */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sortable-header:hover .sort-indicator,
+.sortable-header.active-sort .sort-indicator {
+  opacity: 0.6;
+}
+
+.sortable-header.active-sort .sort-indicator {
+  opacity: 1;
+}
+
+/* Single arrow indicator that changes direction */
+.sort-indicator::after {
+  content: "";
+  position: absolute; /* Keep it absolute within its parent .sort-indicator */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid currentColor;
+  transition: all 0.2s ease;
+}
+
+.sortable-header.active-sort.asc .sort-indicator::after {
+  transform: translate(-50%, -50%) rotate(180deg);
+  border-top-color: var(--accent-color);
+}
+
+.sortable-header.active-sort.desc .sort-indicator::after {
+  /* No rotation needed for desc (default orientation) */
+  border-top-color: var(--accent-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .list-view-header {
+    grid-template-columns: 30px 2fr 1fr 70px 30px;
+    font-size: 0.8rem;
+  }
+
+  .sortable-header {
+    padding-right: 1.2rem;
+  }
+
+  .sort-indicator {
+    right: 0.3rem;
+  }
 }

@@ -37,6 +37,10 @@ const fileIcons = {
 let currentPath = '';
 let currentPathArray = [];
 
+// Current sort state
+let currentSortField = 'name';
+let currentSortDirection = 'asc';
+
 // Create hidden file input
 const fileInput = document.createElement('input');
 fileInput.type = 'file';
@@ -54,6 +58,7 @@ export function formatFileSize(bytes) {
   if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(1)} MB`;
   return `${(bytes / 1073741824).toFixed(1)} GB`;
 }
+
 export function formatFileType(type) {
   const typeMap = {
     'image': 'Image File',
@@ -76,6 +81,7 @@ export function formatFileType(type) {
   
   return typeMap[type] || typeMap['default'];
 }
+
 export function detectFileType(file) {
   const type = file.type ? file.type.toLowerCase() : '';
   const name = file.name ? file.name.toLowerCase() : '';
@@ -104,7 +110,6 @@ return 'image';
   
   return type.split('/')[0] || 'default';
 }
-
 
 export function getFileIcon(type) {
   return fileIcons[type] || fileIcons.default;
@@ -180,213 +185,219 @@ function closeAllMenus() {
 }
 
 function setupEventListeners(userId) {
-
-    // --- Core Event Listeners ---
-
-    // 1. Handle Click to Open and General Clicks to Close
-    document.addEventListener('click', async (e) => {
-        const ellipsisBtn = e.target.closest('.ellipsis-btn'); // Use closest to account for child elements
-
-        // If a click is on an ellipsis button
-        if (ellipsisBtn) {
-            e.preventDefault();
-            e.stopPropagation(); // Stop propagation to prevent document click from closing
-
-            const isFolder = ellipsisBtn.hasAttribute('data-folder-id');
-            const id = isFolder ? ellipsisBtn.dataset.folderId : ellipsisBtn.dataset.docId;
-            const menuId = isFolder ? `folder-menu-${id}` : `menu-${id}`;
-            const menu = document.getElementById(menuId);
-
-            if (menu) {
-                // Clear any pending close timeout immediately
-                if (menuCloseTimeout) {
-                    clearTimeout(menuCloseTimeout);
-                    menuCloseTimeout = null;
-                }
-
-                // Close all other menus, but only if they are not the target menu
-                document.querySelectorAll('.file-menu, .folder-menu').forEach(m => {
-                    if (m.id !== menuId) {
-                        m.classList.add('hidden');
-                        const otherBtn = document.querySelector(`[aria-controls="${m.id}"]`);
-                        if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
-                    }
-                });
-
-                // Toggle visibility of the current menu
-                menu.classList.toggle('hidden');
-                const isHidden = menu.classList.contains('hidden');
-
-                // Set/unset active menu
-                activeMenu = isHidden ? null : menu;
-
-                // Update ARIA attributes
-                ellipsisBtn.setAttribute('aria-expanded', String(!isHidden));
-                ellipsisBtn.setAttribute('aria-controls', menuId); // Link button to menu
-
-                // Position the menu only if it's being shown
-                if (!isHidden) {
-                    const btnRect = ellipsisBtn.getBoundingClientRect();
-                    let topPos = btnRect.bottom + window.scrollY;
-                    let leftPos = btnRect.left + window.scrollX;
-
-                    // Dynamic left positioning to keep menu in viewport
-                    const menuWidth = menu.offsetWidth;
-                    const viewportWidth = window.innerWidth;
-                    if (leftPos + menuWidth > viewportWidth - 10) {
-                         leftPos = viewportWidth - menuWidth - 10;
-                    }
-                    if (leftPos < 10) {
-                        leftPos = 10;
-                    }
-
-                    menu.style.top = `${topPos}px`;
-                    menu.style.left = `${leftPos}px`;
-                }
-            }
-            return; // Important: Exit function after handling ellipsis click
-        }
-
-        // If click is not on an ellipsis button, and not inside an active menu, close all menus
-        // This handles clicks anywhere else on the document to close menus.
-        if (activeMenu && !activeMenu.contains(e.target)) {
-            closeAllMenus();
-        }
+  document.querySelectorAll('.sortable-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const sortField = header.dataset.sortBy;
+      handleSortHeaderClick(sortField);
     });
+  });
 
-    // 2. Handle Mouseenter (Hovering over ellipsis button or open menu)
-    document.addEventListener('mouseenter', (e) => {
-        // If mouse enters an ellipsis button that *might* open a menu
-        if (e.target.classList.contains('ellipsis-btn')) {
-            // If there's a pending close timeout, clear it.
-            // This prevents a menu from closing if you briefly move off and then back on its button.
-            if (menuCloseTimeout) {
-                clearTimeout(menuCloseTimeout);
-                menuCloseTimeout = null;
-            }
-            // We only open on click, so no further action here on mouseenter for button
-        }
-        // If mouse enters an already active/open menu
-        else if (activeMenu && (activeMenu === e.target || activeMenu.contains(e.target))) {
-            // If there's a pending close timeout for this menu, clear it.
-            // This keeps the menu open as long as the mouse is over it.
-            if (menuCloseTimeout) {
-                clearTimeout(menuCloseTimeout);
-                menuCloseTimeout = null;
-            }
-        }
-    }, true); // Use capture phase
+  // --- Core Event Listeners ---
 
-    // 3. Handle Mouseleave (Hovering away from ellipsis button or active menu)
-    document.addEventListener('mouseleave', (e) => {
-        const targetElement = e.target;
-        const relatedTarget = e.relatedTarget; // The element the mouse is moving to
+  // 1. Handle Click to Open and General Clicks to Close
+  document.addEventListener('click', async (e) => {
+      const ellipsisBtn = e.target.closest('.ellipsis-btn'); // Use closest to account for child elements
 
-        // Check if leaving an ellipsis button
-        if (targetElement.classList.contains('ellipsis-btn')) {
-            const isFolder = targetElement.hasAttribute('data-folder-id');
-            const id = isFolder ? targetElement.dataset.folderId : targetElement.dataset.docId;
-            const menuId = isFolder ? `folder-menu-${id}` : `menu-${id}`;
-            const menu = document.getElementById(menuId);
+      // If a click is on an ellipsis button
+      if (ellipsisBtn) {
+          e.preventDefault();
+          e.stopPropagation(); // Stop propagation to prevent document click from closing
 
-            // If a menu is open and we're leaving the button
-            if (menu && !menu.classList.contains('hidden')) {
-                // If the mouse is moving from the button *into* the associated menu, don't close
-                if (menu.contains(relatedTarget)) {
-                    return;
-                }
-                // Otherwise, set a timeout to close the menu
-                menuCloseTimeout = setTimeout(() => {
-                    // Only close if the mouse is truly outside both the button and the menu
-                    // Use a more robust check involving elementFromPoint or checking if relatedTarget is still outside
-                    const currentTarget = document.elementFromPoint(e.clientX, e.clientY);
-                    if (!ellipsisBtn.contains(currentTarget) && !menu.contains(currentTarget)) {
-                        closeAllMenus(); // Use the general close function
-                    }
-                }, 200); // 200ms delay to allow moving to menu
-            }
-        }
-        // Check if leaving an active menu itself
-        else if (activeMenu && (targetElement === activeMenu || activeMenu.contains(targetElement))) {
-            // If the mouse is moving from the menu *into* its associated ellipsis button, don't close
-            const associatedEllipsisBtn = document.querySelector(`[aria-controls="${activeMenu.id}"]`);
-            if (associatedEllipsisBtn && associatedEllipsisBtn.contains(relatedTarget)) {
-                return;
-            }
+          const isFolder = ellipsisBtn.hasAttribute('data-folder-id');
+          const id = isFolder ? ellipsisBtn.dataset.folderId : ellipsisBtn.dataset.docId;
+          const menuId = isFolder ? `folder-menu-${id}` : `menu-${id}`;
+          const menu = document.getElementById(menuId);
 
-            // Otherwise, set a timeout to close the menu
-            menuCloseTimeout = setTimeout(() => {
-                // Only close if the mouse is truly outside the menu (and its button)
-                const currentTarget = document.elementFromPoint(e.clientX, e.clientY);
-                if (!activeMenu.contains(currentTarget) && !(associatedEllipsisBtn && associatedEllipsisBtn.contains(currentTarget))) {
-                     closeAllMenus(); // Use the general close function
-                }
-            }, 200); // 200ms delay
-        }
-    }, true); // Use capture phase for reliability
+          if (menu) {
+              // Clear any pending close timeout immediately
+              if (menuCloseTimeout) {
+                  clearTimeout(menuCloseTimeout);
+                  menuCloseTimeout = null;
+              }
 
-    // --- Rest of your event listeners (actions, modals, etc.) ---
-    // These remain the same, ensure `closeAllMenus()` is called after an action.
+              // Close all other menus, but only if they are not the target menu
+              document.querySelectorAll('.file-menu, .folder-menu').forEach(m => {
+                  if (m.id !== menuId) {
+                      m.classList.add('hidden');
+                      const otherBtn = document.querySelector(`[aria-controls="${m.id}"]`);
+                      if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
+                  }
+              });
 
-    // Example for `edit-button`
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('edit-button')) {
-            closeAllMenus(); // Close the menu immediately after clicking an action
-            const docId = e.target.dataset.docId;
-            const title = e.target.dataset.title || 'Untitled';
-            const description = e.target.dataset.description || '';
-            const tags = e.target.dataset.tags || '';
-            const category = e.target.dataset.category || 'general';
-            openEditModal(docId, title, description, tags, category);
-        }
-        // ... (other action buttons like rename-folder-btn, delete-btn, etc.)
-        else if (e.target.classList.contains('rename-folder-btn')) {
-            closeAllMenus();
-            const folderId = e.target.dataset.folderId;
-            const currentName = e.target.dataset.currentName || '';
-            openRenameFolderModal(folderId, currentName);
-        } else if (e.target.classList.contains('delete-btn')) {
-            closeAllMenus();
-            const docId = e.target.dataset.docId;
-            const blobUrl = e.target.dataset.blobName;
-            if (confirm('Are you sure you want to permanently delete this file?')) {
-                try {
-                    // Assuming deleteFile is an async function
-                    deleteFile(docId, blobUrl);
-                } catch (error) {
-                    alert('Error deleting file: ' + error.message);
-                }
-            }
-        } else if (e.target.classList.contains('delete-folder-btn')) {
-            closeAllMenus();
-            e.stopPropagation();
-            const folderId = e.target.dataset.folderId;
-            if (confirm('Are you sure you want to delete this folder and all its contents?')) {
-                try {
-                    // Assuming deleteFolder is an async function
-                    deleteFolder(folderId, auth.currentUser.uid);
-                } catch (error) {
-                    alert('Error deleting folder: ' + error.message);
-                }
-            }
-        } else if (e.target.classList.contains('breadcrumb')) {
-            closeAllMenus();
-            const path = e.target.dataset.path || '';
-            navigateToDirectory(path);
-        } else if (e.target.classList.contains('move-btn')) {
-            closeAllMenus();
-            const docId = e.target.dataset.docId;
-            const currentPath = e.target.dataset.currentPath || '';
-            openMoveModal(docId, currentPath);
-        } else if (e.target.closest('.folder-card')) {
-            const folderCard = e.target.closest('.folder-card');
-            if (!e.target.closest('.folder-actions') && !e.target.classList.contains('ellipsis-btn')) {
-                closeAllMenus();
-                const path = folderCard.dataset.path;
-                navigateToDirectory(path);
-            }
-        }
-    });
+              // Toggle visibility of the current menu
+              menu.classList.toggle('hidden');
+              const isHidden = menu.classList.contains('hidden');
+
+              // Set/unset active menu
+              activeMenu = isHidden ? null : menu;
+
+              // Update ARIA attributes
+              ellipsisBtn.setAttribute('aria-expanded', String(!isHidden));
+              ellipsisBtn.setAttribute('aria-controls', menuId); // Link button to menu
+
+              // Position the menu only if it's being shown
+              if (!isHidden) {
+                  const btnRect = ellipsisBtn.getBoundingClientRect();
+                  let topPos = btnRect.bottom + window.scrollY;
+                  let leftPos = btnRect.left + window.scrollX;
+
+                  // Dynamic left positioning to keep menu in viewport
+                  const menuWidth = menu.offsetWidth;
+                  const viewportWidth = window.innerWidth;
+                  if (leftPos + menuWidth > viewportWidth - 10) {
+                        leftPos = viewportWidth - menuWidth - 10;
+                  }
+                  if (leftPos < 10) {
+                      leftPos = 10;
+                  }
+
+                  menu.style.top = `${topPos}px`;
+                  menu.style.left = `${leftPos}px`;
+              }
+          }
+          return; // Important: Exit function after handling ellipsis click
+      }
+
+      // If click is not on an ellipsis button, and not inside an active menu, close all menus
+      // This handles clicks anywhere else on the document to close menus.
+      if (activeMenu && !activeMenu.contains(e.target)) {
+          closeAllMenus();
+      }
+  });
+
+  // 2. Handle Mouseenter (Hovering over ellipsis button or open menu)
+  document.addEventListener('mouseenter', (e) => {
+      // If mouse enters an ellipsis button that *might* open a menu
+      if (e.target.classList.contains('ellipsis-btn')) {
+          // If there's a pending close timeout, clear it.
+          // This prevents a menu from closing if you briefly move off and then back on its button.
+          if (menuCloseTimeout) {
+              clearTimeout(menuCloseTimeout);
+              menuCloseTimeout = null;
+          }
+          // We only open on click, so no further action here on mouseenter for button
+      }
+      // If mouse enters an already active/open menu
+      else if (activeMenu && (activeMenu === e.target || activeMenu.contains(e.target))) {
+          // If there's a pending close timeout for this menu, clear it.
+          // This keeps the menu open as long as the mouse is over it.
+          if (menuCloseTimeout) {
+              clearTimeout(menuCloseTimeout);
+              menuCloseTimeout = null;
+          }
+      }
+  }, true); // Use capture phase
+
+  // 3. Handle Mouseleave (Hovering away from ellipsis button or active menu)
+  document.addEventListener('mouseleave', (e) => {
+      const targetElement = e.target;
+      const relatedTarget = e.relatedTarget; // The element the mouse is moving to
+
+      // Check if leaving an ellipsis button
+      if (targetElement.classList.contains('ellipsis-btn')) {
+          const isFolder = targetElement.hasAttribute('data-folder-id');
+          const id = isFolder ? targetElement.dataset.folderId : targetElement.dataset.docId;
+          const menuId = isFolder ? `folder-menu-${id}` : `menu-${id}`;
+          const menu = document.getElementById(menuId);
+
+          // If a menu is open and we're leaving the button
+          if (menu && !menu.classList.contains('hidden')) {
+              // If the mouse is moving from the button *into* the associated menu, don't close
+              if (menu.contains(relatedTarget)) {
+                  return;
+              }
+              // Otherwise, set a timeout to close the menu
+              menuCloseTimeout = setTimeout(() => {
+                  // Only close if the mouse is truly outside both the button and the menu
+                  // Use a more robust check involving elementFromPoint or checking if relatedTarget is still outside
+                  const currentTarget = document.elementFromPoint(e.clientX, e.clientY);
+                  if (!ellipsisBtn.contains(currentTarget) && !menu.contains(currentTarget)) {
+                      closeAllMenus(); // Use the general close function
+                  }
+              }, 200); // 200ms delay to allow moving to menu
+          }
+      }
+      // Check if leaving an active menu itself
+      else if (activeMenu && (targetElement === activeMenu || activeMenu.contains(targetElement))) {
+          // If the mouse is moving from the menu *into* its associated ellipsis button, don't close
+          const associatedEllipsisBtn = document.querySelector(`[aria-controls="${activeMenu.id}"]`);
+          if (associatedEllipsisBtn && associatedEllipsisBtn.contains(relatedTarget)) {
+              return;
+          }
+
+          // Otherwise, set a timeout to close the menu
+          menuCloseTimeout = setTimeout(() => {
+              // Only close if the mouse is truly outside the menu (and its button)
+              const currentTarget = document.elementFromPoint(e.clientX, e.clientY);
+              if (!activeMenu.contains(currentTarget) && !(associatedEllipsisBtn && associatedEllipsisBtn.contains(currentTarget))) {
+                    closeAllMenus(); // Use the general close function
+              }
+          }, 200); // 200ms delay
+      }
+  }, true); // Use capture phase for reliability
+
+  // --- Rest of your event listeners (actions, modals, etc.) ---
+  // These remain the same, ensure `closeAllMenus()` is called after an action.
+
+  // Example for `edit-button`
+  document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('edit-button')) {
+          closeAllMenus(); // Close the menu immediately after clicking an action
+          const docId = e.target.dataset.docId;
+          const title = e.target.dataset.title || 'Untitled';
+          const description = e.target.dataset.description || '';
+          const tags = e.target.dataset.tags || '';
+          const category = e.target.dataset.category || 'general';
+          openEditModal(docId, title, description, tags, category);
+      }
+      // ... (other action buttons like rename-folder-btn, delete-btn, etc.)
+      else if (e.target.classList.contains('rename-folder-btn')) {
+          closeAllMenus();
+          const folderId = e.target.dataset.folderId;
+          const currentName = e.target.dataset.currentName || '';
+          openRenameFolderModal(folderId, currentName);
+      } else if (e.target.classList.contains('delete-btn')) {
+          closeAllMenus();
+          const docId = e.target.dataset.docId;
+          const blobUrl = e.target.dataset.blobName;
+          if (confirm('Are you sure you want to permanently delete this file?')) {
+              try {
+                  // Assuming deleteFile is an async function
+                  deleteFile(docId, blobUrl);
+              } catch (error) {
+                  alert('Error deleting file: ' + error.message);
+              }
+          }
+      } else if (e.target.classList.contains('delete-folder-btn')) {
+          closeAllMenus();
+          e.stopPropagation();
+          const folderId = e.target.dataset.folderId;
+          if (confirm('Are you sure you want to delete this folder and all its contents?')) {
+              try {
+                  // Assuming deleteFolder is an async function
+                  deleteFolder(folderId, auth.currentUser.uid);
+              } catch (error) {
+                  alert('Error deleting folder: ' + error.message);
+              }
+          }
+      } else if (e.target.classList.contains('breadcrumb')) {
+          closeAllMenus();
+          const path = e.target.dataset.path || '';
+          navigateToDirectory(path);
+      } else if (e.target.classList.contains('move-btn')) {
+          closeAllMenus();
+          const docId = e.target.dataset.docId;
+          const currentPath = e.target.dataset.currentPath || '';
+          openMoveModal(docId, currentPath);
+      } else if (e.target.closest('.folder-card')) {
+          const folderCard = e.target.closest('.folder-card');
+          if (!e.target.closest('.folder-actions') && !e.target.classList.contains('ellipsis-btn')) {
+              closeAllMenus();
+              const path = folderCard.dataset.path;
+              navigateToDirectory(path);
+          }
+      }
+  });
 
 
     // Create folder button
@@ -514,6 +525,55 @@ function setupEventListeners(userId) {
     }
 }
 
+// Sorting function
+export function sortFiles(files, field, direction) {
+  return files.sort((a, b) => {
+    let valueA, valueB;
+
+    // Handle different field types
+    switch (field) {
+      case 'name':
+        valueA = (a.metadata?.title || a.name || '').toLowerCase();
+        valueB = (b.metadata?.title || b.name || '').toLowerCase();
+        break;
+      case 'type':
+        // Handle folders differently - they always have type "Folder"
+        if (a.isFolder) valueA = 'folder'; // lowercase for consistent comparison
+        else valueA = formatFileType(a.type || 'default').toLowerCase();
+        
+        if (b.isFolder) valueB = 'folder'; // lowercase for consistent comparison
+        else valueB = formatFileType(b.type || 'default').toLowerCase();
+        break;
+      case 'date':
+        // Use createdAt for folders, uploadedAt for files
+        valueA = a.isFolder ? (a.createdAt?.toDate() || new Date(0)) : (a.uploadedAt?.toDate() || new Date(0));
+        valueB = b.isFolder ? (b.createdAt?.toDate() || new Date(0)) : (b.uploadedAt?.toDate() || new Date(0));
+        break;
+      case 'size':
+        // Folders have no size, so we'll treat them as 0
+        valueA = a.isFolder ? 0 : (a.size || 0);
+        valueB = b.isFolder ? 0 : (b.size || 0);
+        break;
+      default:
+        valueA = (a.metadata?.title || a.name || '').toLowerCase();
+        valueB = (b.metadata?.title || b.name || '').toLowerCase();
+    }
+
+    // Compare values
+    if (typeof valueA === 'string' && typeof valueB === 'string') {
+      // For strings, use localeCompare for natural sorting
+      return direction === 'asc' 
+        ? valueA.localeCompare(valueB, undefined, { sensitivity: 'base' })
+        : valueB.localeCompare(valueA, undefined, { sensitivity: 'base' });
+    } else {
+      // For numbers/dates, use normal comparison
+      if (valueA < valueB) return direction === 'asc' ? -1 : 1;
+      if (valueA > valueB) return direction === 'asc' ? 1 : -1;
+      return 0;
+    }
+  });
+}
+
 function initializeFileDisplay() {
     const container = document.getElementById('files-container');
     let filesList = document.getElementById('files-list');
@@ -575,13 +635,27 @@ async function displayFiles(userId) {
     groupCard.style.flexDirection = 'column';
     groupCard.style.gap = '0';
 
-    // Display folders first
+    // Convert folders to array and sort
+    const foldersArray = [];
     foldersSnapshot.forEach((doc) => {
-      const folder = doc.data();
+      foldersArray.push({ ...doc.data(), id: doc.id, isFolder: true });
+    });
+
+    // Convert files to array and sort
+    const filesArray = [];
+    filesSnapshot.forEach((doc) => {
+      filesArray.push({ ...doc.data(), id: doc.id, isFolder: false });
+    });
+
+    // Sort folders and files separately
+    const sortedFolders = sortFiles(foldersArray, currentSortField, currentSortDirection);
+    const sortedFiles = sortFiles(filesArray, currentSortField, currentSortDirection);
+
+    // Display sorted folders first
+    sortedFolders.forEach((folder) => {
       const folderCard = document.createElement('section');
       folderCard.className = 'folder-card';
       folderCard.dataset.path = folder.fullPath;
-      // In displayFiles() where folders are created:
       folderCard.innerHTML = `
         <section class="file-folder-row">
           <section class="icon">${fileIcons.folder}</section>
@@ -590,20 +664,19 @@ async function displayFiles(userId) {
           <section class="created">${formatDate(folder.createdAt?.toDate())}</section>
           <section class="size">-</section>
           <section class="actions">
-            <button class="ellipsis-btn" data-folder-id="${doc.id}">⋯</button>
+            <button class="ellipsis-btn" data-folder-id="${folder.id}">⋯</button>
           </section>
         </section>
       `;
 
-      // And the folder menu creation:
       const folderMenu = document.createElement('section');
       folderMenu.className = 'folder-menu hidden';
-      folderMenu.id = `folder-menu-${doc.id}`;
+      folderMenu.id = `folder-menu-${folder.id}`;
       folderMenu.innerHTML = `
-        <button class="rename-folder-btn" data-folder-id="${doc.id}" data-current-name="${folder.name}">
+        <button class="rename-folder-btn" data-folder-id="${folder.id}" data-current-name="${folder.name}">
           <img src="images/icons/rename.png" class="menu-icon" alt="Rename"> Rename
         </button>
-        <button class="delete-folder-btn" data-folder-id="${doc.id}">
+        <button class="delete-folder-btn" data-folder-id="${folder.id}">
           <img src="images/icons/delete.png" class="menu-icon" alt="Delete"> Delete
         </button>
       `;
@@ -611,9 +684,8 @@ async function displayFiles(userId) {
       groupCard.appendChild(folderCard);
     });
 
-    // Then display files
-    filesSnapshot.forEach((doc) => {
-      const file = doc.data();
+    // Then display sorted files
+    sortedFiles.forEach((file) => {
       const fileType = getSimplifiedType(file.type);
       const fileIcon = fileIcons[fileType] || fileIcons.default;
 
@@ -628,7 +700,6 @@ async function displayFiles(userId) {
           return;
         }
         
-        // In the displayFiles function, modify the file card HTML generation:
         const card = document.createElement('section');
         card.className = 'file-card';
         card.innerHTML = `
@@ -639,15 +710,14 @@ async function displayFiles(userId) {
               <section class="created">${formatDate(file.uploadedAt?.toDate())}</section>
               <section class="size">${formatFileSize(file.size)}</section>
               <section class="actions">
-                <button class="ellipsis-btn" data-doc-id="${doc.id}">⋯</button>
+                <button class="ellipsis-btn" data-doc-id="${file.id}">⋯</button>
               </section>
             </section>
         `;
 
-        // Create menu separately and append to body
         const menu = document.createElement('section');
         menu.className = 'file-menu hidden';
-        menu.id = `menu-${doc.id}`;
+        menu.id = `menu-${file.id}`;
         menu.innerHTML = `
           <button class="view-btn" onclick="window.open('${file.url}', '_blank')">
             <img src="images/icons/view.png" class="menu-icon" alt="View"> View
@@ -656,19 +726,19 @@ async function displayFiles(userId) {
             <img src="images/icons/download.png" class="menu-icon" alt="Download"> Download
           </button>
           <button class="move-btn" 
-            data-doc-id="${doc.id}"
+            data-doc-id="${file.id}"
             data-current-path="${file.path || ''}">
             <img src="images/icons/move.png" class="menu-icon" alt="Move"> Move
           </button>
           <button class="edit-button" 
-            data-doc-id="${doc.id}" 
+            data-doc-id="${file.id}" 
             data-title="${file.metadata?.title || file.name || 'Untitled'}"
             data-description="${file.metadata?.description || ''}"
             data-tags="${file.metadata?.tags?.join(', ') || ''}"
             data-category="${file.metadata?.category || 'general'}">
             <img src="images/icons/edit.png" class="menu-icon" alt="Edit"> Edit
           </button>
-          <button class="delete-btn" data-doc-id="${doc.id}" data-blob-name="${file.url}">
+          <button class="delete-btn" data-doc-id="${file.id}" data-blob-name="${file.url}">
             <img src="images/icons/delete.png" class="menu-icon" alt="Delete"> Delete
           </button>
         `;
@@ -680,11 +750,50 @@ async function displayFiles(userId) {
     });
 
     filesList.appendChild(groupCard);
+    updateSortIndicators();
 
   } catch (error) {
     console.error("Error loading files:", error);
     filesList.innerHTML = 
       '<p class="error-message">Error loading files. Please check console for details.</p>';
+  }
+}
+
+function updateSortIndicators() {
+  const headers = document.querySelectorAll('.sortable-header');
+  headers.forEach(header => {
+    const sortField = header.dataset.sortBy;
+    // const indicator = header.querySelector('.sort-indicator'); // No longer needed to directly manipulate text
+
+    if (sortField === currentSortField) {
+      header.classList.add('active-sort');
+      // Add or remove 'asc'/'desc' class based on currentSortDirection
+      if (currentSortDirection === 'asc') {
+        header.classList.add('asc');
+        header.classList.remove('desc');
+      } else {
+        header.classList.add('desc');
+        header.classList.remove('asc');
+      }
+    } else {
+      header.classList.remove('active-sort', 'asc', 'desc'); // Remove all sorting related classes
+    }
+  });
+}
+
+function handleSortHeaderClick(sortField) {
+  if (sortField === currentSortField) {
+    // Toggle direction if same field is clicked
+    currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+  } else {
+    // Default to ascending when changing sort field
+    currentSortField = sortField;
+    currentSortDirection = 'asc';
+  }
+  
+  const user = auth.currentUser;
+  if (user) {
+    displayFiles(user.uid);
   }
 }
 
