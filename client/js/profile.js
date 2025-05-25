@@ -50,7 +50,8 @@ export function updateProfileSection(user, userData) {
     if (userData?.photoURL || user.photoURL) {
         profileImage.src = userData?.photoURL || user.photoURL;
     }
-    profileName.textContent = userData?.username || user?.displayName || "User";
+    const userName = userData?.username || user?.displayName || "User";
+    profileName.textContent = `Hi, ${userName} 👋`;
 }
 
 export function setupEditProfile(user, userData) {
